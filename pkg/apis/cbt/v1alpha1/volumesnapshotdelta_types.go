@@ -1,0 +1,135 @@
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1alpha1
+
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
+	"sigs.k8s.io/apiserver-runtime/pkg/builder/resource/resourcestrategy"
+)
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VolumeSnapshotDelta
+// +k8s:openapi-gen=true
+type VolumeSnapshotDelta struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   VolumeSnapshotDeltaSpec   `json:"spec,omitempty"`
+	Status VolumeSnapshotDeltaStatus `json:"status,omitempty"`
+}
+
+// VolumeSnapshotDeltaList
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type VolumeSnapshotDeltaList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+
+	Items []VolumeSnapshotDelta `json:"items"`
+}
+
+// VolumeSnapshotDeltaSpec defines the desired state of VolumeSnapshotDelta
+type VolumeSnapshotDeltaSpec struct {
+	// The name of the base CSI volume snapshot to use for comparison.
+	// If not specified, return all changed blocks.
+	// +optional
+	BaseVolumeSnapshotName string `json:"baseVolumeSnapshotName,omitempty"`
+
+	// The name of the target CSI volume snapshot to use for comparison.
+	// Required.
+	TargetVolumeSnapshotName string `json:"targetVolumeSnapshotName"`
+
+	// Defines the type of volume. Default to "block".
+	// Required.
+	Mode string `json:"mode,omitempty"`
+}
+
+var _ resource.Object = &VolumeSnapshotDelta{}
+var _ resourcestrategy.Validater = &VolumeSnapshotDelta{}
+
+func (in *VolumeSnapshotDelta) GetObjectMeta() *metav1.ObjectMeta {
+	return &in.ObjectMeta
+}
+
+func (in *VolumeSnapshotDelta) NamespaceScoped() bool {
+	return false
+}
+
+func (in *VolumeSnapshotDelta) New() runtime.Object {
+	return &VolumeSnapshotDelta{}
+}
+
+func (in *VolumeSnapshotDelta) NewList() runtime.Object {
+	return &VolumeSnapshotDeltaList{}
+}
+
+func (in *VolumeSnapshotDelta) GetGroupVersionResource() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "cbt.github.com/ihcsim/cbt-controller",
+		Version:  "v1alpha1",
+		Resource: "volumesnapshotdelta",
+	}
+}
+
+func (in *VolumeSnapshotDelta) IsStorageVersion() bool {
+	return true
+}
+
+func (in *VolumeSnapshotDelta) Validate(ctx context.Context) field.ErrorList {
+	// TODO(user): Modify it, adding your API validation here.
+	return nil
+}
+
+var _ resource.ObjectList = &VolumeSnapshotDeltaList{}
+
+func (in *VolumeSnapshotDeltaList) GetListMeta() *metav1.ListMeta {
+	return &in.ListMeta
+}
+
+// VolumeSnapshotDeltaStatus defines the observed state of VolumeSnapshotDelta
+type VolumeSnapshotDeltaStatus struct {
+	// Captures any error encountered.
+	Error string `json:"error,omitempty"`
+
+	// The Callback URL to send the CBT requests to.
+	CallbackURL string `json:"callbackURL"`
+}
+
+func (in VolumeSnapshotDeltaStatus) SubResourceName() string {
+	return "status"
+}
+
+// VolumeSnapshotDelta implements ObjectWithStatusSubResource interface.
+var _ resource.ObjectWithStatusSubResource = &VolumeSnapshotDelta{}
+
+func (in *VolumeSnapshotDelta) GetStatus() resource.StatusSubResource {
+	return in.Status
+}
+
+// VolumeSnapshotDeltaStatus{} implements StatusSubResource interface.
+var _ resource.StatusSubResource = &VolumeSnapshotDeltaStatus{}
+
+func (in VolumeSnapshotDeltaStatus) CopyTo(parent resource.ObjectWithStatusSubResource) {
+	parent.(*VolumeSnapshotDelta).Status = in
+}

@@ -1,0 +1,5 @@
+init_repo:
+	apiserver-boot init repo --domain storage.k8s.io
+
+create_group:
+	apiserver-boot create group version resource --group cbt --version v1alpha1 --kind VolumeSnapshotDelta
