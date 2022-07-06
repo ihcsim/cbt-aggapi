@@ -28,6 +28,8 @@ func main() {
 	err := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
 		WithResource(&cbtv1alpha1.VolumeSnapshotDelta{}).
+		WithoutEtcd().
+		WithLocalDebugExtension().
 		Execute()
 	if err != nil {
 		klog.Fatal(err)
