@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	cbtcontrollers "github.com/ihcsim/cbt-controller/controllers/cbt"
+	"github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -44,6 +45,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	//+kubebuilder:scaffold:scheme
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 }
 
 func main() {

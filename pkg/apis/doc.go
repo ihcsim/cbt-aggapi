@@ -14,10 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 //go:generate apiregister-gen --input-dirs ./... -h ../../boilerplate.go.txt
 
 //
-// +domain=github.com/ihcsim/cbt-controller
-
+// +domain=storage.k8s.io
 package apis

@@ -1,4 +1,3 @@
-
 /*
 Copyright 2022.
 
@@ -23,6 +22,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/ihcsim/cbt-controller/pkg/apis/cbt
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=cbt.github.com/ihcsim/cbt-controller
+// +groupName=cbt.storage.k8s.io
 package v1alpha1 // import "github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
-

@@ -24,13 +24,13 @@ import (
 
 var AddToScheme = func(scheme *runtime.Scheme) error {
 	metav1.AddToGroupVersion(scheme, schema.GroupVersion{
-		Group:   "cbt.github.com/ihcsim/cbt-controller",
+		Group:   "cbt.storage.k8s.io",
 		Version: "v1alpha1",
 	})
 	// +kubebuilder:scaffold:install
 
 	scheme.AddKnownTypes(schema.GroupVersion{
-		Group:   "cbt.github.com/ihcsim/cbt-controller",
+		Group:   "cbt.storage.k8s.io",
 		Version: "v1alpha1",
 	}, &VolumeSnapshotDelta{}, &VolumeSnapshotDeltaList{})
 	return nil

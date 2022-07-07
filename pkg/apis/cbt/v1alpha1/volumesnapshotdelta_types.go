@@ -86,7 +86,7 @@ func (in *VolumeSnapshotDelta) NewList() runtime.Object {
 
 func (in *VolumeSnapshotDelta) GetGroupVersionResource() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
-		Group:    "cbt.github.com/ihcsim/cbt-controller",
+		Group:    "cbt.storage.k8s.io",
 		Version:  "v1alpha1",
 		Resource: "volumesnapshotdelta",
 	}

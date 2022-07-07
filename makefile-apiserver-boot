@@ -3,3 +3,6 @@ init_repo:
 
 create_group:
 	apiserver-boot create group version resource --group cbt --version v1alpha1 --kind VolumeSnapshotDelta
+
+build:
+	apiserver-boot build executables
