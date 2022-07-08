@@ -22,14 +22,13 @@ import (
 
 	// +kubebuilder:scaffold:resource-imports
 	cbtv1alpha1 "github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
-	"github.com/ihcsim/cbt-controller/pkg/storage/memory"
+	"github.com/ihcsim/cbt-controller/pkg/storage"
 )
 
 func main() {
 	err := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
-		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{}, memory.NewStorageProvider(&cbtv1alpha1.VolumeSnapshotDelta{})).
-		WithoutEtcd().
+		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{}, storage.NewStorageProvider(&cbtv1alpha1.VolumeSnapshotDelta{})).
 		WithLocalDebugExtension().
 		Execute()
 	if err != nil {
