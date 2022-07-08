@@ -32,6 +32,9 @@ var AddToScheme = func(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(schema.GroupVersion{
 		Group:   "cbt.storage.k8s.io",
 		Version: "v1alpha1",
-	}, &VolumeSnapshotDelta{}, &VolumeSnapshotDeltaList{})
+	},
+		&VolumeSnapshotDeltaOption{},
+		&VolumeSnapshotDelta{},
+		&VolumeSnapshotDeltaList{})
 	return nil
 }

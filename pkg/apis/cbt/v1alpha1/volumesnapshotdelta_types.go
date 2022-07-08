@@ -114,6 +114,33 @@ type VolumeSnapshotDeltaStatus struct {
 
 	// The Callback URL to send the CBT requests to.
 	CallbackURL string `json:"callbackURL"`
+
+	// The list of changed block deltas received from the the storage provider.
+	ChangedBlockDeltas []*ChangedBlockDelta `json:"changedBlockDeltas"`
+}
+
+type ChangedBlockDelta struct {
+	// The block logical offset on the volume.
+	Offset uint64 `json:"offset"`
+
+	// The size of the block in bytes.
+	BlockSizeBytes uint64 `json:"blockSizeBytes"`
+
+	// The token and other information needed to retrieve the actual data block
+	// at the given offset.
+	DataToken DataToken `json:"dataToken"`
+}
+
+type DataToken struct {
+	// The token to use to retrieve the actual data block at the given offset.
+	Token string `json:"token"`
+
+	// Timestamp when the token is issued.
+	IssuanceTime metav1.Time `json:"issuanceTime"`
+
+	// The TTL of the token in seconds. The expiry time is calculated by adding
+	// the time of issuance with this value.
+	TTL metav1.Duration `json:"ttl"`
 }
 
 func (in VolumeSnapshotDeltaStatus) SubResourceName() string {
