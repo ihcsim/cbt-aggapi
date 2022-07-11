@@ -8,7 +8,6 @@ package grpc
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -23,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VolumeSnapshotDeltaServiceClient interface {
-	ListVolumeSnaphotDeltas(ctx context.Context, in *VolumeSnapshotDeltaRequest, opts ...grpc.CallOption) (*VolumeSnapshotDeltaResponse, error)
+	ListVolumeSnapshotDeltas(ctx context.Context, in *VolumeSnapshotDeltaRequest, opts ...grpc.CallOption) (*VolumeSnapshotDeltaResponse, error)
 }
 
 type volumeSnapshotDeltaServiceClient struct {
@@ -34,9 +33,9 @@ func NewVolumeSnapshotDeltaServiceClient(cc grpc.ClientConnInterface) VolumeSnap
 	return &volumeSnapshotDeltaServiceClient{cc}
 }
 
-func (c *volumeSnapshotDeltaServiceClient) ListVolumeSnaphotDeltas(ctx context.Context, in *VolumeSnapshotDeltaRequest, opts ...grpc.CallOption) (*VolumeSnapshotDeltaResponse, error) {
+func (c *volumeSnapshotDeltaServiceClient) ListVolumeSnapshotDeltas(ctx context.Context, in *VolumeSnapshotDeltaRequest, opts ...grpc.CallOption) (*VolumeSnapshotDeltaResponse, error) {
 	out := new(VolumeSnapshotDeltaResponse)
-	err := c.cc.Invoke(ctx, "/cbt.VolumeSnapshotDeltaService/ListVolumeSnaphotDeltas", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/cbt.VolumeSnapshotDeltaService/ListVolumeSnapshotDeltas", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (c *volumeSnapshotDeltaServiceClient) ListVolumeSnaphotDeltas(ctx context.C
 // All implementations must embed UnimplementedVolumeSnapshotDeltaServiceServer
 // for forward compatibility
 type VolumeSnapshotDeltaServiceServer interface {
-	ListVolumeSnaphotDeltas(context.Context, *VolumeSnapshotDeltaRequest) (*VolumeSnapshotDeltaResponse, error)
+	ListVolumeSnapshotDeltas(context.Context, *VolumeSnapshotDeltaRequest) (*VolumeSnapshotDeltaResponse, error)
 	mustEmbedUnimplementedVolumeSnapshotDeltaServiceServer()
 }
 
@@ -55,8 +54,8 @@ type VolumeSnapshotDeltaServiceServer interface {
 type UnimplementedVolumeSnapshotDeltaServiceServer struct {
 }
 
-func (UnimplementedVolumeSnapshotDeltaServiceServer) ListVolumeSnaphotDeltas(context.Context, *VolumeSnapshotDeltaRequest) (*VolumeSnapshotDeltaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListVolumeSnaphotDeltas not implemented")
+func (UnimplementedVolumeSnapshotDeltaServiceServer) ListVolumeSnapshotDeltas(context.Context, *VolumeSnapshotDeltaRequest) (*VolumeSnapshotDeltaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListVolumeSnapshotDeltas not implemented")
 }
 func (UnimplementedVolumeSnapshotDeltaServiceServer) mustEmbedUnimplementedVolumeSnapshotDeltaServiceServer() {
 }
@@ -72,20 +71,20 @@ func RegisterVolumeSnapshotDeltaServiceServer(s grpc.ServiceRegistrar, srv Volum
 	s.RegisterService(&VolumeSnapshotDeltaService_ServiceDesc, srv)
 }
 
-func _VolumeSnapshotDeltaService_ListVolumeSnaphotDeltas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _VolumeSnapshotDeltaService_ListVolumeSnapshotDeltas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VolumeSnapshotDeltaRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VolumeSnapshotDeltaServiceServer).ListVolumeSnaphotDeltas(ctx, in)
+		return srv.(VolumeSnapshotDeltaServiceServer).ListVolumeSnapshotDeltas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/cbt.VolumeSnapshotDeltaService/ListVolumeSnaphotDeltas",
+		FullMethod: "/cbt.VolumeSnapshotDeltaService/ListVolumeSnapshotDeltas",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VolumeSnapshotDeltaServiceServer).ListVolumeSnaphotDeltas(ctx, req.(*VolumeSnapshotDeltaRequest))
+		return srv.(VolumeSnapshotDeltaServiceServer).ListVolumeSnapshotDeltas(ctx, req.(*VolumeSnapshotDeltaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -98,8 +97,8 @@ var VolumeSnapshotDeltaService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*VolumeSnapshotDeltaServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListVolumeSnaphotDeltas",
-			Handler:    _VolumeSnapshotDeltaService_ListVolumeSnaphotDeltas_Handler,
+			MethodName: "ListVolumeSnapshotDeltas",
+			Handler:    _VolumeSnapshotDeltaService_ListVolumeSnapshotDeltas_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

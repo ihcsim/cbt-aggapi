@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 
 service VolumeSnapshotDeltaService {
-  rpc ListVolumeSnaphotDeltas(VolumeSnapshotDeltaRequest)
+  rpc ListVolumeSnapshotDeltas(VolumeSnapshotDeltaRequest)
     returns (VolumeSnapshotDeltaResponse) {}
 }
 

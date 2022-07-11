@@ -104,7 +104,7 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 		)
 		defer cancel()
 
-		grpcResp, err := m.grpc.ListVolumeSnaphotDeltas(ctx, grpcReq)
+		grpcResp, err := m.grpc.ListVolumeSnapshotDeltas(ctx, grpcReq)
 		if err != nil {
 			http.Error(resp, err.Error(), http.StatusInternalServerError)
 			return
