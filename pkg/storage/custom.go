@@ -110,10 +110,22 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 			return
 		}
 
+		results := []*v1alpha1.ChangedBlockDelta{}
 		for _, cbd := range grpcResp.GetBlockDelta().GetChangedBlockDeltas() {
+			results = append(results, &v1alpha1.ChangedBlockDelta{
+				Offset:         cbd.GetOffset(),
+				BlockSizeBytes: cbd.GetBlockSizeBytes(),
+				DataToken: v1alpha1.DataToken{
+					Token:        cbd.GetDataToken().GetToken(),
+					IssuanceTime: metav1.NewTime(cbd.GetDataToken().GetIssuanceTime().AsTime()),
+					TTL: metav1.Duration{
+						Duration: cbd.GetDataToken().GetTtlSeconds().AsDuration(),
+					},
+				},
+			})
 			log.Printf("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
 		}
-		writeResponse(resp, grpcResp.GetBlockDelta().GetChangedBlockDeltas())
+		writeResponse(resp, results)
 	}), nil
 }
 

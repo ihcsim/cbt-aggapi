@@ -114,9 +114,6 @@ type VolumeSnapshotDeltaStatus struct {
 
 	// The Callback URL to send the CBT requests to.
 	CallbackURL string `json:"callbackURL"`
-
-	// The list of changed block deltas received from the the storage provider.
-	ChangedBlockDeltas []*ChangedBlockDelta `json:"changedBlockDeltas"`
 }
 
 type ChangedBlockDelta struct {

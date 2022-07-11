@@ -43,12 +43,8 @@ func main() {
 			klog.Error(err)
 		}
 	}()
-
-	// @TODO
-	// - authn/authz
-	// - remove CBD from status subresource
-
 	grpcClient := grpccbt.NewVolumeSnapshotDeltaServiceClient(clientConn)
+
 	if err := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
 		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{},
