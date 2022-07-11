@@ -7,6 +7,9 @@ create_group:
 build:
 	apiserver-boot build executables
 
+run-local:
+	PATH=`pwd`/bin:${PATH} apiserver-boot run local
+
 .PHONY: proto
 proto:
 	protoc -I=proto \

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
+	"github.com/ihcsim/cbt-controller/pkg/grpc"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,9 +20,13 @@ import (
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
 )
 
-func NewStorageProvider(obj resource.Object) builderrest.ResourceHandlerProvider {
+func NewStorageProvider(
+	obj resource.Object,
+	grpcClient grpc.VolumeSnapshotDeltaServiceClient,
+) builderrest.ResourceHandlerProvider {
 	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (registryrest.Storage, error) {
 		return &custom{
+			grpc:            grpcClient,
 			namespaceScoped: obj.NamespaceScoped(),
 			newFunc:         obj.New,
 			newListFunc:     obj.NewList,
@@ -33,6 +39,7 @@ func NewStorageProvider(obj resource.Object) builderrest.ResourceHandlerProvider
 }
 
 type custom struct {
+	grpc            grpc.VolumeSnapshotDeltaServiceClient
 	namespaceScoped bool
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
@@ -64,57 +71,64 @@ func (m *custom) NamespaceScoped() bool {
 // same http.ResponseWriter passed to ServeHTTP.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
 func (m *custom) Connect(ctx context.Context, id string, options runtime.Object, r registryrest.Responder) (http.Handler, error) {
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		result := &v1alpha1.VolumeSnapshotDelta{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-delta",
-				Namespace: "default",
-			},
-			Spec: v1alpha1.VolumeSnapshotDeltaSpec{
-				BaseVolumeSnapshotName:   "base",
-				TargetVolumeSnapshotName: "target",
-			},
-			Status: v1alpha1.VolumeSnapshotDeltaStatus{
-				Error:       "",
-				CallbackURL: "example.com",
-			},
-		}
-
-		cast, ok := options.(*v1alpha1.VolumeSnapshotDeltaOption)
+	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		opts, ok := options.(*v1alpha1.VolumeSnapshotDeltaOption)
 		if !ok {
-			http.Error(res, "failed to read VolumeSnapshotDelta options", http.StatusInternalServerError)
+			http.Error(resp, "failed to read VolumeSnapshotDelta options", http.StatusInternalServerError)
 			return
 		}
 
-		if cast.FetchCBD {
-			result.Status.ChangedBlockDeltas = []*v1alpha1.ChangedBlockDelta{
-				{
-					Offset:         1,
-					BlockSizeBytes: 1024000,
+		if !opts.FetchCBD {
+			result := &v1alpha1.VolumeSnapshotDelta{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-delta",
+					Namespace: "default",
 				},
-				{
-					Offset:         2,
-					BlockSizeBytes: 1024000,
+				Spec: v1alpha1.VolumeSnapshotDeltaSpec{
+					BaseVolumeSnapshotName:   "base",
+					TargetVolumeSnapshotName: "target",
 				},
-				{
-					Offset:         3,
-					BlockSizeBytes: 1024000,
+				Status: v1alpha1.VolumeSnapshotDeltaStatus{
+					Error:       "",
+					CallbackURL: "example.com",
 				},
 			}
+
+			writeResponse(resp, result)
+			return
 		}
 
-		body, err := json.Marshal(result)
+		var (
+			ctx, cancel = context.WithTimeout(context.Background(), time.Second*180)
+			grpcReq     = &grpc.VolumeSnapshotDeltaRequest{}
+		)
+		defer cancel()
+
+		grpcResp, err := m.grpc.ListVolumeSnaphotDeltas(ctx, grpcReq)
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		res.WriteHeader(http.StatusOK)
-		if _, err := res.Write(body); err != nil {
-			log.Println(err)
-			return
+		for _, cbd := range grpcResp.GetBlockDelta().GetChangedBlockDeltas() {
+			log.Printf("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
 		}
+		writeResponse(resp, grpcResp.GetBlockDelta().GetChangedBlockDeltas())
 	}), nil
+}
+
+func writeResponse(resp http.ResponseWriter, data interface{}) {
+	body, err := json.Marshal(data)
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp.WriteHeader(http.StatusOK)
+	if _, err := resp.Write(body); err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 // NewConnectOptions returns an empty options object that will be used to pass
