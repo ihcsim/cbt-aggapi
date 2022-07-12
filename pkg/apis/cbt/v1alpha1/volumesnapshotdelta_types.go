@@ -73,7 +73,7 @@ func (in *VolumeSnapshotDelta) GetObjectMeta() *metav1.ObjectMeta {
 }
 
 func (in *VolumeSnapshotDelta) NamespaceScoped() bool {
-	return false
+	return true
 }
 
 func (in *VolumeSnapshotDelta) New() runtime.Object {

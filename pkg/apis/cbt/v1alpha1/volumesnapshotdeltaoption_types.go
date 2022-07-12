@@ -77,7 +77,7 @@ func (v *VolumeSnapshotDeltaOption) ConvertFromUrlValues(values *url.Values) err
 var _ resourcestrategy.Validater = &VolumeSnapshotDeltaOption{}
 
 func (in *VolumeSnapshotDeltaOption) NamespaceScoped() bool {
-	return false
+	return true
 }
 
 func (in *VolumeSnapshotDeltaOption) New() runtime.Object {
