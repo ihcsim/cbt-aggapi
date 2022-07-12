@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -18,6 +19,7 @@ import (
 	registryrest "k8s.io/apiserver/pkg/registry/rest"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func NewStorageProvider(
@@ -40,6 +42,7 @@ func NewStorageProvider(
 
 type custom struct {
 	grpc            grpc.VolumeSnapshotDeltaServiceClient
+	k8sClient       client.Client
 	namespaceScoped bool
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
@@ -72,6 +75,25 @@ func (m *custom) NamespaceScoped() bool {
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
 func (m *custom) Connect(ctx context.Context, id string, options runtime.Object, r registryrest.Responder) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		result := &v1alpha1.VolumeSnapshotDelta{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "cbt.storage.k8s.io/v1alpha1",
+				Kind:       "VolumeSnapshotDelta",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-delta",
+				Namespace: "default",
+			},
+			Spec: v1alpha1.VolumeSnapshotDeltaSpec{
+				BaseVolumeSnapshotName:   "base",
+				TargetVolumeSnapshotName: "target",
+				Mode:                     "block",
+			},
+			Status: v1alpha1.VolumeSnapshotDeltaStatus{
+				Error: "",
+			},
+		}
+
 		opts, ok := options.(*v1alpha1.VolumeSnapshotDeltaOption)
 		if !ok {
 			http.Error(resp, "failed to read VolumeSnapshotDelta options", http.StatusInternalServerError)
@@ -79,21 +101,6 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 		}
 
 		if !opts.FetchCBD {
-			result := &v1alpha1.VolumeSnapshotDelta{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-delta",
-					Namespace: "default",
-				},
-				Spec: v1alpha1.VolumeSnapshotDeltaSpec{
-					BaseVolumeSnapshotName:   "base",
-					TargetVolumeSnapshotName: "target",
-				},
-				Status: v1alpha1.VolumeSnapshotDeltaStatus{
-					Error:       "",
-					CallbackURL: "example.com",
-				},
-			}
-
 			writeResponse(resp, result)
 			return
 		}
@@ -110,9 +117,9 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 			return
 		}
 
-		results := []*v1alpha1.ChangedBlockDelta{}
+		blockDeltas := []*v1alpha1.ChangedBlockDelta{}
 		for _, cbd := range grpcResp.GetBlockDelta().GetChangedBlockDeltas() {
-			results = append(results, &v1alpha1.ChangedBlockDelta{
+			blockDeltas = append(blockDeltas, &v1alpha1.ChangedBlockDelta{
 				Offset:         cbd.GetOffset(),
 				BlockSizeBytes: cbd.GetBlockSizeBytes(),
 				DataToken: v1alpha1.DataToken{
@@ -125,7 +132,9 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 			})
 			log.Printf("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
 		}
-		writeResponse(resp, results)
+
+		result.Status.ChangedBlockDeltas = blockDeltas
+		writeResponse(resp, result)
 	}), nil
 }
 
@@ -136,6 +145,7 @@ func writeResponse(resp http.ResponseWriter, data interface{}) {
 		return
 	}
 
+	resp.Header().Set("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
 	if _, err := resp.Write(body); err != nil {
 		log.Println(err)
@@ -165,13 +175,43 @@ func (m *custom) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
-	return &v1alpha1.VolumeSnapshotDeltaList{}, nil
+	return &v1alpha1.VolumeSnapshotDelta{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "cbt.storage.k8s.io/v1alpha1",
+			Kind:       "VolumeSnapshotDelta",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-delta",
+			Namespace: "default",
+		},
+		Spec: v1alpha1.VolumeSnapshotDeltaSpec{
+			BaseVolumeSnapshotName:   "base",
+			TargetVolumeSnapshotName: "target",
+			Mode:                     "block",
+		},
+		Status: v1alpha1.VolumeSnapshotDeltaStatus{
+			Error: "",
+		},
+	}, nil
 }
 
 // Create creates a new version of a resource.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Create
 func (m *custom) Create(ctx context.Context, obj runtime.Object, createValidation registryrest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
-	return &v1alpha1.VolumeSnapshotDelta{}, nil
+	o, ok := obj.(*v1alpha1.VolumeSnapshotDelta)
+	if !ok {
+		return nil, fmt.Errorf("failed to create resource")
+	}
+
+	opts := &client.CreateOptions{
+		Raw: options,
+	}
+
+	if err := m.k8sClient.Create(ctx, o, opts); err != nil {
+		return nil, err
+	}
+
+	return o, nil
 }
 
 // 'label' selects on labels; 'field' selects on the object's fields. Not all fields

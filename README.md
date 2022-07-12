@@ -117,6 +117,22 @@ To run the aggregated API server locally:
 PATH=`pwd`/bin:$PATH apiserver-boot run local --run "etcd,apiserver"
 ```
 
+### Working With Custom Resource
+
+```sh
+cat<<EOF | kubectl apply -f -
+apiVersion: cbt.storage.k8s.io/v1alpha1
+kind: VolumeSnapshotDelta
+metadata:
+  name: test-delta
+  namespace: default
+spec:
+  baseVolumeSnapshotName: vs-00
+  targetVolumeSnapshotName: vs-01
+  mode: block
+EOF
+```
+
 ### Testing On Kubernetes
 
 Define the repository URL and tag for your image:

@@ -112,8 +112,8 @@ type VolumeSnapshotDeltaStatus struct {
 	// Captures any error encountered.
 	Error string `json:"error,omitempty"`
 
-	// The Callback URL to send the CBT requests to.
-	CallbackURL string `json:"callbackURL"`
+	// The list of changed block data.
+	ChangedBlockDeltas []*ChangedBlockDelta
 }
 
 type ChangedBlockDelta struct {
