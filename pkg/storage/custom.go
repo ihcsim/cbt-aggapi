@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -175,22 +174,27 @@ func (m *custom) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
-	return &v1alpha1.VolumeSnapshotDelta{
+	return &v1alpha1.VolumeSnapshotDeltaList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "cbt.storage.k8s.io/v1alpha1",
-			Kind:       "VolumeSnapshotDelta",
+			Kind:       "VolumeSnapshotDeltaList",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-delta",
-			Namespace: "default",
-		},
-		Spec: v1alpha1.VolumeSnapshotDeltaSpec{
-			BaseVolumeSnapshotName:   "base",
-			TargetVolumeSnapshotName: "target",
-			Mode:                     "block",
-		},
-		Status: v1alpha1.VolumeSnapshotDeltaStatus{
-			Error: "",
+		ListMeta: metav1.ListMeta{},
+		Items: []v1alpha1.VolumeSnapshotDelta{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-delta",
+					Namespace: "default",
+				},
+				Spec: v1alpha1.VolumeSnapshotDeltaSpec{
+					BaseVolumeSnapshotName:   "base",
+					TargetVolumeSnapshotName: "target",
+					Mode:                     "block",
+				},
+				Status: v1alpha1.VolumeSnapshotDeltaStatus{
+					Error: "",
+				},
+			},
 		},
 	}, nil
 }

@@ -36,9 +36,14 @@ import (
 type VolumeSnapshotDeltaOption struct {
 	metav1.TypeMeta `json:",inline"`
 
-	FetchCBD bool   `json:"fetchCBD"`
-	Limit    uint64 `json:"limit"`
-	Offset   uint64 `json:"offset"`
+	// Set to true to fetch all the changed block entries.
+	FetchCBD bool `json:"fetchCBD"`
+
+	// Define the maximum number of entries to return in the response.
+	Limit uint64 `json:"limit"`
+
+	// Offset defines the start of the block index in the response.
+	Offset uint64 `json:"offset"`
 }
 
 func (v *VolumeSnapshotDeltaOption) ConvertFromUrlValues(values *url.Values) error {

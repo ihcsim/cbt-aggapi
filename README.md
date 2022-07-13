@@ -43,7 +43,7 @@ Appending the API endpoint with the `fetchcbd=true` query parameter will return
 the list of changed block entries:
 
 ```sh
-curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd-true" | jq .
+curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd-true&limit=256&offset=0" | jq .
 {
   "kind": "VolumeSnapshotDelta",
   "apiVersion": "cbt.storage.k8s.io/v1alpha1",
@@ -133,7 +133,7 @@ To run the aggregated API server locally:
 PATH=`pwd`/bin:$PATH make run-local
 ```
 
-### Working With Custom Resource
+### Working With The Custom Resource
 
 Create a `VolumeSnapshotDelta` resource:
 
@@ -180,7 +180,7 @@ kubectl proxy &
 Get the changed block entries of the resource:
 
 ```sh
-curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd=true"
+curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd=true&limit=256&offset=0"
 ```
 
 ```json
