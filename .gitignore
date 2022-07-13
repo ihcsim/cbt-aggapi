@@ -1,5 +1,5 @@
-# YAML manifest
-config/
+# PKI assets
+config/certificates
 
 # Binaries for programs and plugins
 *.exe
