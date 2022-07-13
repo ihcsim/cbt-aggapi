@@ -22,8 +22,10 @@ Essentially, the default API endpoint will return a `VolumeSnapshotDelta` custom
 resource:
 
 ```sh
-$ curl --silent -k "https://localhost:9443/apis/cbt.storage.k8s.io/v1alpha1/volumesnapshotdelta/foo" | jq .
+curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta" | jq .
 {
+  "kind": "VolumeSnapshotDelta",
+  "apiVersion": "cbt.storage.k8s.io/v1alpha1",
   "metadata": {
     "name": "test-delta",
     "namespace": "default",
@@ -31,11 +33,9 @@ $ curl --silent -k "https://localhost:9443/apis/cbt.storage.k8s.io/v1alpha1/volu
   },
   "spec": {
     "baseVolumeSnapshotName": "base",
-    "targetVolumeSnapshotName": "target"
+    "targetVolumeSnapshotName": "target",
+    "mode": "block"
   },
-  "status": {
-    "callbackURL": "example.com"
-  }
 }
 ```
 
@@ -43,36 +43,52 @@ Appending the API endpoint with the `fetchcbd=true` query parameter will return
 the list of changed block entries:
 
 ```sh
-$ curl --silent -k "https://localhost:9443/apis/cbt.storage.k8s.io/v1alpha1/volumesnapshotdelta/foo?fetchcbd=true" | jq .
-[
-  {
-    "offset": 0,
-    "blockSizeBytes": 524288,
-    "dataToken": {
-      "token": "ieEEQ9Bj7E6XR",
-      "issuanceTime": "2022-07-11T22:06:20Z",
-      "ttl": "3h0m0s"
-    }
+curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd-true" | jq .
+{
+  "kind": "VolumeSnapshotDelta",
+  "apiVersion": "cbt.storage.k8s.io/v1alpha1",
+  "metadata": {
+    "name": "test-delta",
+    "namespace": "default",
+    "creationTimestamp": null
   },
-  {
-    "offset": 1,
-    "blockSizeBytes": 524288,
-    "dataToken": {
-      "token": "widvSdPYZCyLB",
-      "issuanceTime": "2022-07-11T22:06:20Z",
-      "ttl": "3h0m0s"
-    }
+  "spec": {
+    "baseVolumeSnapshotName": "base",
+    "targetVolumeSnapshotName": "target",
+    "mode": "block"
   },
-  {
-    "offset": 2,
-    "blockSizeBytes": 524288,
-    "dataToken": {
-      "token": "VtSebH83xYzvB",
-      "issuanceTime": "2022-07-11T22:06:20Z",
-      "ttl": "3h0m0s"
-    }
+  "status": {
+    "ChangedBlockDeltas": [
+      {
+        "offset": 0,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "ieEEQ9Bj7E6XR",
+          "issuanceTime": "2022-07-13T03:19:30Z",
+          "ttl": "3h0m0s"
+        }
+      },
+      {
+        "offset": 1,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "widvSdPYZCyLB",
+          "issuanceTime": "2022-07-13T03:19:30Z",
+          "ttl": "3h0m0s"
+        }
+      },
+      {
+        "offset": 2,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "VtSebH83xYzvB",
+          "issuanceTime": "2022-07-13T03:19:30Z",
+          "ttl": "3h0m0s"
+        }
+      }
+    ]
   }
-]
+}
 ```
 
 Most of the setup code of the aggregated API server is generated using the
@@ -119,6 +135,8 @@ PATH=`pwd`/bin:$PATH make run-local
 
 ### Working With Custom Resource
 
+Create a `VolumeSnapshotDelta` resource:
+
 ```sh
 cat<<EOF | kubectl apply -f -
 apiVersion: cbt.storage.k8s.io/v1alpha1
@@ -131,6 +149,86 @@ spec:
   targetVolumeSnapshotName: vs-01
   mode: block
 EOF
+```
+
+Use `kubectl` to `GET` the resources:
+
+```sh
+kubectl get volumesnapshotdelta test-delta -oyaml
+```
+
+```yaml
+apiVersion: cbt.storage.k8s.io/v1alpha1
+kind: VolumeSnapshotDelta
+metadata:
+  creationTimestamp: null
+  name: test-delta
+  namespace: default
+spec:
+  baseVolumeSnapshotName: base
+  mode: block
+  targetVolumeSnapshotName: target
+status: {}
+```
+
+Use the `kubectl proxy` to start a proxy between localhost and cluster:
+
+```sh
+kubectl proxy &
+```
+
+Get the changed block entries of the resource:
+
+```sh
+curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd=true"
+```
+
+```json
+{
+  "kind": "VolumeSnapshotDelta",
+  "apiVersion": "cbt.storage.k8s.io/v1alpha1",
+  "metadata": {
+    "name": "test-delta",
+    "namespace": "default",
+    "creationTimestamp": null
+  },
+  "spec": {
+    "baseVolumeSnapshotName": "base",
+    "targetVolumeSnapshotName": "target",
+    "mode": "block"
+  },
+  "status": {
+    "changedBlockDeltas": [
+      {
+        "offset": 0,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "ieEEQ9Bj7E6XR",
+          "issuanceTime": "2022-07-13T03:30:46Z",
+          "ttl": "3h0m0s"
+        }
+      },
+      {
+        "offset": 1,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "widvSdPYZCyLB",
+          "issuanceTime": "2022-07-13T03:30:46Z",
+          "ttl": "3h0m0s"
+        }
+      },
+      {
+        "offset": 2,
+        "blockSizeBytes": 524288,
+        "dataToken": {
+          "token": "VtSebH83xYzvB",
+          "issuanceTime": "2022-07-13T03:30:46Z",
+          "ttl": "3h0m0s"
+        }
+      }
+    ]
+  }
+}
 ```
 
 ### Testing On Kubernetes

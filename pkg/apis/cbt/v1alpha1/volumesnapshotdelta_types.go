@@ -113,7 +113,7 @@ type VolumeSnapshotDeltaStatus struct {
 	Error string `json:"error,omitempty"`
 
 	// The list of changed block data.
-	ChangedBlockDeltas []*ChangedBlockDelta
+	ChangedBlockDeltas []*ChangedBlockDelta `json:"changedBlockDeltas,omitempty"`
 }
 
 type ChangedBlockDelta struct {

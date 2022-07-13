@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
 	registryrest "k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/klog"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -130,7 +130,7 @@ func (m *custom) Connect(ctx context.Context, id string, options runtime.Object,
 					},
 				},
 			})
-			log.Printf("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
+			klog.Infof("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
 		}
 
 		result.Status.ChangedBlockDeltas = blockDeltas
@@ -148,7 +148,7 @@ func writeResponse(resp http.ResponseWriter, data interface{}) {
 	resp.Header().Set("Content-Type", "application/json")
 	resp.WriteHeader(http.StatusOK)
 	if _, err := resp.Write(body); err != nil {
-		log.Println(err)
+		klog.Error(err)
 		return
 	}
 }
