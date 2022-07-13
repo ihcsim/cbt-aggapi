@@ -55,6 +55,7 @@ func main() {
 				&cbtv1alpha1.VolumeSnapshotDelta{},
 				grpcClient)).
 		WithLocalDebugExtension().
+		WithoutEtcd().
 		Execute(); err != nil {
 		klog.Fatal(err)
 	}

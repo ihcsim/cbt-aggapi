@@ -21,7 +21,7 @@ push:
 	docker push $(IMAGE_REPO_GRPC):$(IMAGE_TAG_GRPC)
 
 run-local:
-	PATH=`pwd`/bin:${PATH} apiserver-boot run local --run "etcd,apiserver"
+	PATH=`pwd`/bin:${PATH} apiserver-boot run local --run apiserver
 
 .PHONY: codegen
 codegen:
