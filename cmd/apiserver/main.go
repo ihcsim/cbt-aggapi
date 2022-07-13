@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	flag "github.com/spf13/pflag"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,11 +30,14 @@ import (
 	"github.com/ihcsim/cbt-controller/pkg/storage"
 )
 
-var grpcTarget = flag.String("target", ":9779", "Address of the GRPC server")
-
 func main() {
-	grpcOpts := grpc.WithTransportCredentials(insecure.NewCredentials())
-	clientConn, err := grpc.Dial(*grpcTarget, grpcOpts)
+	grpcTarget, exists := os.LookupEnv("GRPC_TARGET")
+	if !exists {
+		grpcTarget = ":9779"
+	}
+
+	opts := grpc.WithTransportCredentials(insecure.NewCredentials())
+	clientConn, err := grpc.Dial(grpcTarget, opts)
 	if err != nil {
 		klog.Fatal(err)
 	}
@@ -52,13 +55,7 @@ func main() {
 				&cbtv1alpha1.VolumeSnapshotDelta{},
 				grpcClient)).
 		WithLocalDebugExtension().
-		WithFlagFns(addCustomFlags).
 		Execute(); err != nil {
 		klog.Fatal(err)
 	}
-}
-
-func addCustomFlags(set *flag.FlagSet) *flag.FlagSet {
-	set.AddFlag(flag.Lookup("target"))
-	return set
 }

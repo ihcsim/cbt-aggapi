@@ -96,13 +96,13 @@ go test ./...
 To re-generate the Go code:
 
 ```sh
-make generate CONTROLLER_GEN=$GOPATH/bin/controller-gen
+make codegen
 ```
 
-To build the binaries:
+To build the aggregated API server binary in the `bin` folder:
 
 ```sh
-apiserver-boot build executables
+make build
 ```
 
 To start the mock GRPC server that serves the sample CBT records:
@@ -114,7 +114,7 @@ go run ./cmd/server
 To run the aggregated API server locally:
 
 ```sh
-PATH=`pwd`/bin:$PATH apiserver-boot run local --run "etcd,apiserver"
+PATH=`pwd`/bin:$PATH make run-local
 ```
 
 ### Working With Custom Resource
@@ -138,29 +138,32 @@ EOF
 Define the repository URL and tag for your image:
 
 ```sh
-export IMAGE_REPO=<your_image_repo>
-
-export IMAGE_TAG=<your_image_tag>
+export IMAGE_REPO_AGGAPI=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_AGGAPI=<your_agg_apiserver_image_tag>
+export IMAGE_REPO_GRPC=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_GRPC=<your_agg_apiserver_image_tag>
 ```
 
-Output the Kubernetes YAML manifest to a `config` folder:
+Build and push the aggregated API server and mock GRPC server images:
 
 ```sh
-apiserver-boot build config
-  --name cbt \
-  --namespace csi-cbt \
-  --image ${IMAGE_REPO}:${IMAGE_TAG} \
-  --output config
+make image
+
+make push
 ```
 
-Build and push the aggregated API server image:
+To deploy the YAML manifests to the `csi-cbt` namespaec on a Kubernetes cluster:
 
 ```sh
-apiserver-boot build container \
-  --targets apiserver \
-  --image ${IMAGE_REPO}:${IMAGE_TAG}
+kubectl create ns csi-cbt
 
-docker push ${IMAGE_REPO}:${IMAGE_TAG}
+make deploy
+```
+
+To re-generate the Kubernetes YAML manifest in the `config` folder:
+
+```sh
+make config
 ```
 
 ## License
