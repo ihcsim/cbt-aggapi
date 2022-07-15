@@ -23,7 +23,7 @@ push:
 run-local:
 	PATH=`pwd`/bin:${PATH} apiserver-boot run local --run apiserver
 
-codegen:
+codegen: proto
 	./hack/update-codegen.sh
 
 codegen-verify:
