@@ -27,7 +27,7 @@ import (
 	// +kubebuilder:scaffold:resource-imports
 	cbtv1alpha1 "github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
 	grpccbt "github.com/ihcsim/cbt-controller/pkg/grpc"
-	"github.com/ihcsim/cbt-controller/pkg/storage"
+	"github.com/ihcsim/cbt-controller/pkg/storage/cbt"
 )
 
 func main() {
@@ -51,7 +51,7 @@ func main() {
 	if err := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
 		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{},
-			storage.NewStorageProvider(
+			cbt.NewStorageProvider(
 				&cbtv1alpha1.VolumeSnapshotDelta{},
 				grpcClient)).
 		WithLocalDebugExtension().
