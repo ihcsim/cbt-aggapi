@@ -20,7 +20,7 @@ limitations under the License.
 
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/ihcsim/cbt-controller/pkg/apis/cbt
+// +k8s:conversion-gen=github.com/ihcsim/cbt-aggapi/pkg/apis/cbt
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=cbt.storage.k8s.io
-package v1alpha1 // import "github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
+package v1alpha1 // import "github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"

@@ -23,9 +23,11 @@ push:
 run-local:
 	PATH=`pwd`/bin:${PATH} apiserver-boot run local --run apiserver
 
-.PHONY: codegen
 codegen:
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	./hack/update-codegen.sh
+
+codegen-verify:
+	./hack/verify-codegen.sh
 
 .PHONY: proto
 proto:
