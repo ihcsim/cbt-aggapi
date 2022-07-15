@@ -99,7 +99,7 @@ Most of the setup code of the aggregated API server is generated using the
 Install the `apiserver-builder` tool following the instructions
 [here](https://github.com/kubernetes-sigs/apiserver-builder-alpha#installation).
 The `apiserver-boot` tool requires the code to be checked out into the local
-`$GOPATH` i.e. `github.com/ihcsim/cbt-controller`.
+`$GOPATH` i.e. `github.com/ihcsim/cbt-aggapi`.
 
 ### Development
 

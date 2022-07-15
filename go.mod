@@ -1,4 +1,4 @@
-module github.com/ihcsim/cbt-controller
+module github.com/ihcsim/cbt-aggapi
 
 go 1.17
 

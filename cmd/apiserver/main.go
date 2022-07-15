@@ -25,9 +25,9 @@ import (
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
 
 	// +kubebuilder:scaffold:resource-imports
-	cbtv1alpha1 "github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
-	grpccbt "github.com/ihcsim/cbt-controller/pkg/grpc"
-	"github.com/ihcsim/cbt-controller/pkg/storage/cbt"
+	cbtv1alpha1 "github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
+	grpccbt "github.com/ihcsim/cbt-aggapi/pkg/grpc"
+	"github.com/ihcsim/cbt-aggapi/pkg/storage/cbt"
 )
 
 func main() {

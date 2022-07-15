@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ihcsim/cbt-controller/pkg/apis/cbt/v1alpha1"
-	"github.com/ihcsim/cbt-controller/pkg/grpc"
+	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
+	"github.com/ihcsim/cbt-aggapi/pkg/grpc"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

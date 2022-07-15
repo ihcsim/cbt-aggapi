@@ -5,8 +5,8 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/ihcsim/cbt-controller/pkg/grpc"
-	grpcserver "github.com/ihcsim/cbt-controller/pkg/grpc/server"
+	pb "github.com/ihcsim/cbt-aggapi/pkg/grpc"
+	grpcserver "github.com/ihcsim/cbt-aggapi/pkg/grpc/server"
 
 	"google.golang.org/grpc"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "github.com/ihcsim/cbt-controller/pkg/grpc"
+	pb "github.com/ihcsim/cbt-aggapi/pkg/grpc"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
