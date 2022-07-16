@@ -27,7 +27,7 @@ func NewStorageProvider(
 	grpcClient grpc.VolumeSnapshotDeltaServiceClient,
 ) builderrest.ResourceHandlerProvider {
 	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (registryrest.Storage, error) {
-		return &custom{
+		return &cbt{
 			grpc:            grpcClient,
 			namespaceScoped: obj.NamespaceScoped(),
 			newFunc:         obj.New,
@@ -40,7 +40,7 @@ func NewStorageProvider(
 	}
 }
 
-type custom struct {
+type cbt struct {
 	grpc            grpc.VolumeSnapshotDeltaServiceClient
 	k8sClient       client.Client
 	namespaceScoped bool
@@ -50,20 +50,20 @@ type custom struct {
 	registryrest.TableConvertor
 }
 
-func (m *custom) New() runtime.Object {
+func (m *cbt) New() runtime.Object {
 	return m.newFunc()
 }
 
 // NewList returns an empty object that can be used with the List call.
 // This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
-func (m *custom) NewList() runtime.Object {
+func (m *cbt) NewList() runtime.Object {
 	return m.newListFunc()
 }
 
 // NamespaceScoped returns true if the storage is namespaced
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Scoper
-func (m *custom) NamespaceScoped() bool {
+func (m *cbt) NamespaceScoped() bool {
 	return m.namespaceScoped
 }
 
@@ -73,7 +73,7 @@ func (m *custom) NamespaceScoped() bool {
 // be used for a single API request and then discarded. The Responder is guaranteed to write to the
 // same http.ResponseWriter passed to ServeHTTP.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *custom) Connect(ctx context.Context, id string, options runtime.Object, r registryrest.Responder) (http.Handler, error) {
+func (m *cbt) Connect(ctx context.Context, id string, options runtime.Object, r registryrest.Responder) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		result := &v1alpha1.VolumeSnapshotDelta{
 			TypeMeta: metav1.TypeMeta{
@@ -159,19 +159,19 @@ func writeResponse(resp http.ResponseWriter, data interface{}) {
 // path below the object will be included as the named string in the serialization
 // of the runtime object.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *custom) NewConnectOptions() (runtime.Object, bool, string) {
+func (m *cbt) NewConnectOptions() (runtime.Object, bool, string) {
 	return &v1alpha1.VolumeSnapshotDeltaOption{}, false, ""
 }
 
 // ConnectMethods returns the list of HTTP methods handled by Connect
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *custom) ConnectMethods() []string {
+func (m *cbt) ConnectMethods() []string {
 	return []string{"GET"}
 }
 
 // List selects resources in the storage which match to the selector. 'options' can be nil.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
-func (m *custom) List(
+func (m *cbt) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
@@ -202,7 +202,7 @@ func (m *custom) List(
 
 // Create creates a new version of a resource.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Create
-func (m *custom) Create(ctx context.Context, obj runtime.Object, createValidation registryrest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
+func (m *cbt) Create(ctx context.Context, obj runtime.Object, createValidation registryrest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	o, ok := obj.(*v1alpha1.VolumeSnapshotDelta)
 	if !ok {
 		return nil, fmt.Errorf("failed to create resource")
@@ -224,7 +224,7 @@ func (m *custom) Create(ctx context.Context, obj runtime.Object, createValidatio
 // isn't supported. 'resourceVersion' allows for continuing/starting a watch at a
 // particular version.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Watcher
-func (m *custom) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+func (m *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
 	if m.watch == nil {
 		m.watch = make(chan watch.Event)
 	}
