@@ -258,11 +258,16 @@ kubectl create ns csi-cbt
 make deploy
 ```
 
-To re-generate the Kubernetes YAML manifest in the `config` folder:
+### Re-generate Code and YAML
+
+The Kubernetes YAML manifests are found in the `yaml` folder. To re-generate them:
 
 ```sh
-make config
+make yaml
 ```
+
+This will output all the manifests into the `yaml-generated` folder. Move what is
+needed into the `yaml` folder.
 
 ## License
 

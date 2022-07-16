@@ -38,7 +38,7 @@ proto:
 
 .PHONY: yaml
 yaml:
-	apiserver-boot build config --name cbt --namespace csi-cbt --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) --output config
+	apiserver-boot build config --name cbt --namespace csi-cbt --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) --output yaml-generated
 
 deploy:
-	kubectl apply -f config
+	kubectl apply -f yaml

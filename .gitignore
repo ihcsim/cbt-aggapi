@@ -1,5 +1,8 @@
 # PKI assets
-config/certificates
+yaml/certificates
+
+# Auto-generated YAML
+yaml-generated
 
 # Binaries for programs and plugins
 *.exe
