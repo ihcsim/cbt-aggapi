@@ -3,14 +3,22 @@ IMAGE_REPO_GRPC ?= quay.io/isim/cbt-grpc
 IMAGE_TAG_AGGAPI ?= latest
 IMAGE_TAG_GRPC ?= latest
 
+GOOS ?= linux
+GOARCH ?= amd64
+
 init_repo:
 	apiserver-boot init repo --domain storage.k8s.io
 
 create_group:
 	apiserver-boot create group version resource --group cbt --version v1alpha1 --kind VolumeSnapshotDelta
 
-build:
+apiserver:
 	apiserver-boot build executables --targets apiserver
+
+mock:
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o grpc-server ./cmd/mock/grpc/main.go
+
+build: apiserver mock
 
 image: build
 	apiserver-boot build container --targets apiserver --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI)
