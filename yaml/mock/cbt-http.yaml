@@ -23,12 +23,12 @@ spec:
         - "./http-server"
         args:
         - "--listen-addr=:8080"
-        - "--grpc-target=:9779"
+        - "--grpc-target=cbt-grpc:9779"
         env:
         - name: CSI_DRIVER_NAME
           value: example.csi.k8s.io
         - name: CSI_CBT_ENDPOINT
-          value: cbt-http:8080
+          value: http://cbt-http:8080
         ports:
         - name: http
           containerPort: 8080

@@ -28,9 +28,6 @@ spec:
           readOnly: true
         command:
         - "./apiserver"
-        env:
-        - name: GRPC_TARGET
-          value: cbt-grpc.csi-cbt:9779
         args:
         - "--etcd-servers=http://etcd-svc:2379"
         - "--tls-cert-file=/apiserver.local.config/certificates/tls.crt"

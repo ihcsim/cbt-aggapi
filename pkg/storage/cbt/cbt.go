@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
@@ -114,7 +115,23 @@ func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 		klog.Infof("discovered CSI driver: %s", obj.GetName())
 
 		// send request to the csi sidecar
+		httpRes, err := http.Get(obj.Spec.CBTEndpoint)
+		if err != nil {
+			http.Error(resp, fmt.Sprintf("failed to fetch CBT entries: %s", err), http.StatusInternalServerError)
+			return
+		}
 
+		body, err := io.ReadAll(httpRes.Body)
+		if err != nil {
+			http.Error(resp, fmt.Sprintf("failed to read CBT entries: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		resp.WriteHeader(http.StatusOK)
+		if _, err := resp.Write(body); err != nil {
+			klog.Error(err)
+			return
+		}
 	}), nil
 }
 

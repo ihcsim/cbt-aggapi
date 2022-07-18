@@ -29,6 +29,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	if _, err := registerDriver(); err != nil {
 		klog.Fatal(err)
 	}
@@ -119,6 +121,7 @@ type serveMux struct {
 }
 
 func newServeMux(grpcTarget string) (*serveMux, error) {
+	klog.Infof("connecting to GRPC target at %s", grpcTarget)
 	opts := grpc.WithTransportCredentials(insecure.NewCredentials())
 	clientConn, err := grpc.Dial(grpcTarget, opts)
 	if err != nil {

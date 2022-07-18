@@ -9,6 +9,9 @@ API_GROUP ?= cbt
 API_VERSION ?= v1alpha1
 API_KIND ?= VolumeSnapshotDelta
 
+NAMESPACE ?= csi-cbt
+WAIT_TIMEOUT ?= 2m
+
 GOOS ?= linux
 GOARCH ?= amd64
 
@@ -58,8 +61,21 @@ yaml:
 	rm -rf yaml-generated
 	apiserver-boot build config --name cbt --namespace csi-cbt --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) --output yaml-generated
 
-etcd:
-	kubectl apply -f yaml/etcd.yaml
+deploy: deploy-etcd deploy-aggapi deploy-mock
 
-deploy:
+deploy-etcd:
+	kubectl apply -f yaml/mock/etcd.yaml
+	kubectl -n $(NAMESPACE) wait --timeout=$(WAIT_TIMEOUT) --for=condition=Ready -l app=etcd po
+
+deploy-aggapi:
 	kubectl apply -f yaml
+	kubectl -n $(NAMESPACE) wait --timeout=$(WAIT_TIMEOUT) --for=condition=Ready -l apiserver=true po
+
+deploy-mock:
+	sleep 60
+	kubectl apply -f yaml/mock/cbt-grpc.yaml
+	kubectl apply -f yaml/mock/cbt-http.yaml
+
+clean:
+	kubectl -n $(NAMESPACE) delete -R -f yaml
+	kubectl -n $(NAMESPACE) delete pvc etcd-data-dir-etcd-0
