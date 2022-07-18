@@ -54,6 +54,7 @@ type DriverDiscoveryList struct {
 type DriverDiscoverySpec struct {
 	Driver      string `json:"driverName"`
 	CBTEndpoint string `json:"cbtEndpoint"`
+	CABundle    string `json:"caBundle"`
 }
 
 var _ resource.Object = &DriverDiscovery{}
