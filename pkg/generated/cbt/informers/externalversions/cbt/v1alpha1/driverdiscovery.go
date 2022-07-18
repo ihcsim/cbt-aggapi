@@ -31,59 +31,58 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// VolumeSnapshotDeltaOptionInformer provides access to a shared informer and lister for
-// VolumeSnapshotDeltaOptions.
-type VolumeSnapshotDeltaOptionInformer interface {
+// DriverDiscoveryInformer provides access to a shared informer and lister for
+// DriverDiscoveries.
+type DriverDiscoveryInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.VolumeSnapshotDeltaOptionLister
+	Lister() v1alpha1.DriverDiscoveryLister
 }
 
-type volumeSnapshotDeltaOptionInformer struct {
+type driverDiscoveryInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace        string
 }
 
-// NewVolumeSnapshotDeltaOptionInformer constructs a new informer for VolumeSnapshotDeltaOption type.
+// NewDriverDiscoveryInformer constructs a new informer for DriverDiscovery type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewVolumeSnapshotDeltaOptionInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredVolumeSnapshotDeltaOptionInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewDriverDiscoveryInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredDriverDiscoveryInformer(client, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredVolumeSnapshotDeltaOptionInformer constructs a new informer for VolumeSnapshotDeltaOption type.
+// NewFilteredDriverDiscoveryInformer constructs a new informer for DriverDiscovery type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredVolumeSnapshotDeltaOptionInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredDriverDiscoveryInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CbtV1alpha1().VolumeSnapshotDeltaOptions(namespace).List(context.TODO(), options)
+				return client.CbtV1alpha1().DriverDiscoveries().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CbtV1alpha1().VolumeSnapshotDeltaOptions(namespace).Watch(context.TODO(), options)
+				return client.CbtV1alpha1().DriverDiscoveries().Watch(context.TODO(), options)
 			},
 		},
-		&cbtv1alpha1.VolumeSnapshotDeltaOption{},
+		&cbtv1alpha1.DriverDiscovery{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *volumeSnapshotDeltaOptionInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredVolumeSnapshotDeltaOptionInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *driverDiscoveryInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredDriverDiscoveryInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *volumeSnapshotDeltaOptionInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&cbtv1alpha1.VolumeSnapshotDeltaOption{}, f.defaultInformer)
+func (f *driverDiscoveryInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&cbtv1alpha1.DriverDiscovery{}, f.defaultInformer)
 }
 
-func (f *volumeSnapshotDeltaOptionInformer) Lister() v1alpha1.VolumeSnapshotDeltaOptionLister {
-	return v1alpha1.NewVolumeSnapshotDeltaOptionLister(f.Informer().GetIndexer())
+func (f *driverDiscoveryInformer) Lister() v1alpha1.DriverDiscoveryLister {
+	return v1alpha1.NewDriverDiscoveryLister(f.Informer().GetIndexer())
 }

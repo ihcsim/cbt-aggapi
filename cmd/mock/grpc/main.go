@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var listenAddr = flag.String("target", ":9779", "Address of the GRPC server")
+var listenAddr = flag.String("listen", ":9779", "Address of the GRPC server")
 
 func main() {
 	flag.Parse()

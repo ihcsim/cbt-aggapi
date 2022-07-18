@@ -22,19 +22,28 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var AddToScheme = func(scheme *runtime.Scheme) error {
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{
+var (
+	SchemeGroupVersion = schema.GroupVersion{
 		Group:   "cbt.storage.k8s.io",
 		Version: "v1alpha1",
-	})
-	// +kubebuilder:scaffold:install
+	}
 
-	scheme.AddKnownTypes(schema.GroupVersion{
-		Group:   "cbt.storage.k8s.io",
-		Version: "v1alpha1",
-	},
-		&VolumeSnapshotDeltaOption{},
-		&VolumeSnapshotDelta{},
-		&VolumeSnapshotDeltaList{})
-	return nil
+	AddToScheme = func(scheme *runtime.Scheme) error {
+		metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
+		// +kubebuilder:scaffold:install
+
+		scheme.AddKnownTypes(
+			SchemeGroupVersion,
+			&DriverDiscovery{},
+			&DriverDiscoveryList{},
+			&VolumeSnapshotDelta{},
+			&VolumeSnapshotDeltaList{},
+			&VolumeSnapshotDeltaOption{})
+		return nil
+	}
+)
+
+// Resource takes an unqualified resource and returns a qualified GroupResource.
+func Resource(resource string) schema.GroupResource {
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }

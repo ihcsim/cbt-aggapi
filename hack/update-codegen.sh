@@ -28,7 +28,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 # to use your own boilerplate text use:
 #   --go-header-file ${SCRIPT_ROOT}/hack/custom-boilerplate.go.txt
 
-for group in cbt discovery;
+for group in cbt;
 do
   bash ${CODEGEN_PKG}/generate-groups.sh all \
     github.com/ihcsim/cbt-aggapi/pkg/generated/${group} \
@@ -38,6 +38,8 @@ do
     --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt -v10
 done
 
+rm -rf pkg/generated
+mkdir -p pkg/generated
 cp -R github.com/ihcsim/cbt-aggapi/pkg/generated/* pkg/generated/
 cp -R github.com/ihcsim/cbt-aggapi/pkg/apis/* pkg/apis/
 rm -rf github.com

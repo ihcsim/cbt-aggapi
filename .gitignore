@@ -12,6 +12,8 @@ yaml-generated
 *.dylib
 bin
 testbin/*
+grpc-server
+http-server
 
 # Test binary, build with `go test -c`
 *.test

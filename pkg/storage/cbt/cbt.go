@@ -5,34 +5,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
-	"github.com/ihcsim/cbt-aggapi/pkg/grpc"
+	cbtinformers "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/informers/externalversions/cbt"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
-	registryrest "k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/registry/rest"
+	restregistry "k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/klog"
-	"sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
+	builderresource "sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var _ rest.Connecter = &cbt{}
+
 func NewStorageProvider(
-	obj resource.Object,
-	grpcClient grpc.VolumeSnapshotDeltaServiceClient,
+	obj builderresource.Object,
+	informers cbtinformers.Interface,
 ) builderrest.ResourceHandlerProvider {
-	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (registryrest.Storage, error) {
+	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (restregistry.Storage, error) {
 		return &cbt{
-			grpc:            grpcClient,
+			informers:       informers,
 			namespaceScoped: obj.NamespaceScoped(),
 			newFunc:         obj.New,
 			newListFunc:     obj.NewList,
-			TableConvertor: registryrest.NewDefaultTableConvertor(schema.GroupResource{
+			TableConvertor: restregistry.NewDefaultTableConvertor(schema.GroupResource{
 				Group:    obj.GetGroupVersionResource().Group,
 				Resource: obj.GetGroupVersionResource().Resource,
 			}),
@@ -41,30 +42,29 @@ func NewStorageProvider(
 }
 
 type cbt struct {
-	grpc            grpc.VolumeSnapshotDeltaServiceClient
-	k8sClient       client.Client
+	informers       cbtinformers.Interface
 	namespaceScoped bool
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
 	watch           chan watch.Event
-	registryrest.TableConvertor
+	restregistry.TableConvertor
 }
 
-func (m *cbt) New() runtime.Object {
-	return m.newFunc()
+func (c *cbt) New() runtime.Object {
+	return c.newFunc()
 }
 
 // NewList returns an empty object that can be used with the List call.
 // This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
-func (m *cbt) NewList() runtime.Object {
-	return m.newListFunc()
+func (c *cbt) NewList() runtime.Object {
+	return c.newListFunc()
 }
 
 // NamespaceScoped returns true if the storage is namespaced
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Scoper
-func (m *cbt) NamespaceScoped() bool {
-	return m.namespaceScoped
+func (c *cbt) NamespaceScoped() bool {
+	return c.namespaceScoped
 }
 
 // Connect returns an http.Handler that will handle the request/response for a given API invocation.
@@ -73,7 +73,7 @@ func (m *cbt) NamespaceScoped() bool {
 // be used for a single API request and then discarded. The Responder is guaranteed to write to the
 // same http.ResponseWriter passed to ServeHTTP.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *cbt) Connect(ctx context.Context, id string, options runtime.Object, r registryrest.Responder) (http.Handler, error) {
+func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r restregistry.Responder) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		result := &v1alpha1.VolumeSnapshotDelta{
 			TypeMeta: metav1.TypeMeta{
@@ -105,52 +105,17 @@ func (m *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 			return
 		}
 
-		var (
-			ctx, cancel = context.WithTimeout(context.Background(), time.Second*180)
-			grpcReq     = &grpc.VolumeSnapshotDeltaRequest{}
-		)
-		defer cancel()
-
-		grpcResp, err := m.grpc.ListVolumeSnapshotDeltas(ctx, grpcReq)
+		// find the CSI driver
+		obj, err := c.informers.V1alpha1().DriverDiscoveries().Lister().Get("example.csi.k8s.io")
 		if err != nil {
-			http.Error(resp, err.Error(), http.StatusInternalServerError)
+			http.Error(resp, fmt.Sprintf("failed to discover CSI driver: %s", err), http.StatusInternalServerError)
 			return
 		}
+		klog.Infof("discovered CSI driver: %s", obj.GetName())
 
-		blockDeltas := []*v1alpha1.ChangedBlockDelta{}
-		for _, cbd := range grpcResp.GetBlockDelta().GetChangedBlockDeltas() {
-			blockDeltas = append(blockDeltas, &v1alpha1.ChangedBlockDelta{
-				Offset:         cbd.GetOffset(),
-				BlockSizeBytes: cbd.GetBlockSizeBytes(),
-				DataToken: v1alpha1.DataToken{
-					Token:        cbd.GetDataToken().GetToken(),
-					IssuanceTime: metav1.NewTime(cbd.GetDataToken().GetIssuanceTime().AsTime()),
-					TTL: metav1.Duration{
-						Duration: cbd.GetDataToken().GetTtlSeconds().AsDuration(),
-					},
-				},
-			})
-			klog.Infof("found changed block at offset %d (%d)\n", cbd.GetOffset(), cbd.GetBlockSizeBytes())
-		}
+		// send request to the csi sidecar
 
-		result.Status.ChangedBlockDeltas = blockDeltas
-		writeResponse(resp, result)
 	}), nil
-}
-
-func writeResponse(resp http.ResponseWriter, data interface{}) {
-	body, err := json.Marshal(data)
-	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	resp.Header().Set("Content-Type", "application/json")
-	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(body); err != nil {
-		klog.Error(err)
-		return
-	}
 }
 
 // NewConnectOptions returns an empty options object that will be used to pass
@@ -159,19 +124,19 @@ func writeResponse(resp http.ResponseWriter, data interface{}) {
 // path below the object will be included as the named string in the serialization
 // of the runtime object.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *cbt) NewConnectOptions() (runtime.Object, bool, string) {
+func (c *cbt) NewConnectOptions() (runtime.Object, bool, string) {
 	return &v1alpha1.VolumeSnapshotDeltaOption{}, false, ""
 }
 
 // ConnectMethods returns the list of HTTP methods handled by Connect
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-func (m *cbt) ConnectMethods() []string {
+func (c *cbt) ConnectMethods() []string {
 	return []string{"GET"}
 }
 
 // List selects resources in the storage which match to the selector. 'options' can be nil.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
-func (m *cbt) List(
+func (c *cbt) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
@@ -200,33 +165,29 @@ func (m *cbt) List(
 	}, nil
 }
 
-// Create creates a new version of a resource.
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Create
-func (m *cbt) Create(ctx context.Context, obj runtime.Object, createValidation registryrest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
-	o, ok := obj.(*v1alpha1.VolumeSnapshotDelta)
-	if !ok {
-		return nil, fmt.Errorf("failed to create resource")
-	}
-
-	opts := &client.CreateOptions{
-		Raw: options,
-	}
-
-	if err := m.k8sClient.Create(ctx, o, opts); err != nil {
-		return nil, err
-	}
-
-	return o, nil
-}
-
 // 'label' selects on labels; 'field' selects on the object's fields. Not all fields
 // are supported; an error should be returned if 'field' tries to select on a field that
 // isn't supported. 'resourceVersion' allows for continuing/starting a watch at a
 // particular version.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Watcher
-func (m *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
-	if m.watch == nil {
-		m.watch = make(chan watch.Event)
+func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+	if c.watch == nil {
+		c.watch = make(chan watch.Event)
 	}
-	return watch.NewProxyWatcher(m.watch), nil
+	return watch.NewProxyWatcher(c.watch), nil
+}
+
+func writeResponse(resp http.ResponseWriter, data interface{}) {
+	body, err := json.Marshal(data)
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp.Header().Set("Content-Type", "application/json")
+	resp.WriteHeader(http.StatusOK)
+	if _, err := resp.Write(body); err != nil {
+		klog.Error(err)
+		return
+	}
 }

@@ -17,46 +17,75 @@ limitations under the License.
 package main
 
 import (
-	"os"
+	"fmt"
+	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
 
 	// +kubebuilder:scaffold:resource-imports
 	cbtv1alpha1 "github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
-	grpccbt "github.com/ihcsim/cbt-aggapi/pkg/grpc"
-	"github.com/ihcsim/cbt-aggapi/pkg/storage/cbt"
+	cbtclient "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
+	genericinformers "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/informers/externalversions"
+	cbtinformers "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/informers/externalversions/cbt"
+	cbtstorage "github.com/ihcsim/cbt-aggapi/pkg/storage/cbt"
 )
 
 func main() {
-	grpcTarget, exists := os.LookupEnv("GRPC_TARGET")
-	if !exists {
-		grpcTarget = ":9779"
-	}
-
-	opts := grpc.WithTransportCredentials(insecure.NewCredentials())
-	clientConn, err := grpc.Dial(grpcTarget, opts)
+	informers, informersFactory, err := cbtInformers()
 	if err != nil {
 		klog.Fatal(err)
 	}
-	defer func() {
-		if err := clientConn.Close(); err != nil {
-			klog.Error(err)
-		}
-	}()
-	grpcClient := grpccbt.NewVolumeSnapshotDeltaServiceClient(clientConn)
 
-	if err := builder.APIServer.
+	apiserver := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
+		WithResource(&cbtv1alpha1.DriverDiscovery{}).
 		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{},
-			cbt.NewStorageProvider(
+			cbtstorage.NewStorageProvider(
 				&cbtv1alpha1.VolumeSnapshotDelta{},
-				grpcClient)).
-		WithLocalDebugExtension().
-		WithoutEtcd().
-		Execute(); err != nil {
+				informers,
+			)).
+		WithPostStartHook("start-informers", func(ctx genericapiserver.PostStartHookContext) error {
+			informers.V1alpha1().DriverDiscoveries().Informer().AddEventHandler(
+				cache.ResourceEventHandlerFuncs{
+					AddFunc:    func(new interface{}) {},
+					UpdateFunc: func(old, new interface{}) {},
+					DeleteFunc: func(obj interface{}) {},
+				},
+			)
+
+			informersFactory.Start(ctx.StopCh)
+			outcome := informersFactory.WaitForCacheSync(ctx.StopCh)
+			for kind, ok := range outcome {
+				if !ok {
+					return fmt.Errorf("informer cache sync failed. kind: %v", kind)
+				}
+			}
+
+			return nil
+		}).
+		WithLocalDebugExtension()
+
+	if err := apiserver.Execute(); err != nil {
 		klog.Fatal(err)
 	}
+}
+
+func cbtInformers() (cbtinformers.Interface, genericinformers.SharedInformerFactory, error) {
+	resyncDuration := time.Minute * 10
+	restConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	client, err := cbtclient.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	informersFactory := genericinformers.NewSharedInformerFactory(client, resyncDuration)
+	return informersFactory.Cbt(), informersFactory, nil
 }

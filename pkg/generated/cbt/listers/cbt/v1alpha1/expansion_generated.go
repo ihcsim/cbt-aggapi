@@ -17,6 +17,10 @@ limitations under the License.
 
 package v1alpha1
 
+// DriverDiscoveryListerExpansion allows custom methods to be added to
+// DriverDiscoveryLister.
+type DriverDiscoveryListerExpansion interface{}
+
 // VolumeSnapshotDeltaListerExpansion allows custom methods to be added to
 // VolumeSnapshotDeltaLister.
 type VolumeSnapshotDeltaListerExpansion interface{}
@@ -24,11 +28,3 @@ type VolumeSnapshotDeltaListerExpansion interface{}
 // VolumeSnapshotDeltaNamespaceListerExpansion allows custom methods to be added to
 // VolumeSnapshotDeltaNamespaceLister.
 type VolumeSnapshotDeltaNamespaceListerExpansion interface{}
-
-// VolumeSnapshotDeltaOptionListerExpansion allows custom methods to be added to
-// VolumeSnapshotDeltaOptionLister.
-type VolumeSnapshotDeltaOptionListerExpansion interface{}
-
-// VolumeSnapshotDeltaOptionNamespaceListerExpansion allows custom methods to be added to
-// VolumeSnapshotDeltaOptionNamespaceLister.
-type VolumeSnapshotDeltaOptionNamespaceListerExpansion interface{}

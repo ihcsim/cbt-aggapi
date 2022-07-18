@@ -17,6 +17,6 @@ limitations under the License.
 
 package v1alpha1
 
-type VolumeSnapshotDeltaExpansion interface{}
+type DriverDiscoveryExpansion interface{}
 
-type VolumeSnapshotDeltaOptionExpansion interface{}
+type VolumeSnapshotDeltaExpansion interface{}

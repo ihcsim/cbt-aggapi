@@ -23,10 +23,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// DriverDiscoveries returns a DriverDiscoveryInformer.
+	DriverDiscoveries() DriverDiscoveryInformer
 	// VolumeSnapshotDeltas returns a VolumeSnapshotDeltaInformer.
 	VolumeSnapshotDeltas() VolumeSnapshotDeltaInformer
-	// VolumeSnapshotDeltaOptions returns a VolumeSnapshotDeltaOptionInformer.
-	VolumeSnapshotDeltaOptions() VolumeSnapshotDeltaOptionInformer
 }
 
 type version struct {
@@ -40,12 +40,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// DriverDiscoveries returns a DriverDiscoveryInformer.
+func (v *version) DriverDiscoveries() DriverDiscoveryInformer {
+	return &driverDiscoveryInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // VolumeSnapshotDeltas returns a VolumeSnapshotDeltaInformer.
 func (v *version) VolumeSnapshotDeltas() VolumeSnapshotDeltaInformer {
 	return &volumeSnapshotDeltaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// VolumeSnapshotDeltaOptions returns a VolumeSnapshotDeltaOptionInformer.
-func (v *version) VolumeSnapshotDeltaOptions() VolumeSnapshotDeltaOptionInformer {
-	return &volumeSnapshotDeltaOptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

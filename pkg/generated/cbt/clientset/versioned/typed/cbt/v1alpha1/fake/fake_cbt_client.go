@@ -27,12 +27,12 @@ type FakeCbtV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeCbtV1alpha1) VolumeSnapshotDeltas(namespace string) v1alpha1.VolumeSnapshotDeltaInterface {
-	return &FakeVolumeSnapshotDeltas{c, namespace}
+func (c *FakeCbtV1alpha1) DriverDiscoveries() v1alpha1.DriverDiscoveryInterface {
+	return &FakeDriverDiscoveries{c}
 }
 
-func (c *FakeCbtV1alpha1) VolumeSnapshotDeltaOptions(namespace string) v1alpha1.VolumeSnapshotDeltaOptionInterface {
-	return &FakeVolumeSnapshotDeltaOptions{c, namespace}
+func (c *FakeCbtV1alpha1) VolumeSnapshotDeltas(namespace string) v1alpha1.VolumeSnapshotDeltaInterface {
+	return &FakeVolumeSnapshotDeltas{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

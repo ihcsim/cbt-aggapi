@@ -96,12 +96,34 @@ Most of the setup code of the aggregated API server is generated using the
 
 ## Quick Start
 
+Setup and connect to a Kubernetes cluster.
+
+Create the `csi-cbt` namespace:
+
+```sh
+kubectl create ns csi-cbt
+```
+
+Deploy `etcd`:
+
+```sh
+make etcd
+```
+
+Deploy the CBT aggregated API server and mock HTTP and GRPC servers:
+
+```sh
+make deploy
+```
+
+The Docker images are hosted on public repositories at `quay.io/isim`.
+
+## Development
+
 Install the `apiserver-builder` tool following the instructions
 [here](https://github.com/kubernetes-sigs/apiserver-builder-alpha#installation).
 The `apiserver-boot` tool requires the code to be checked out into the local
 `$GOPATH` i.e. `github.com/ihcsim/cbt-aggapi`.
-
-### Development
 
 To run the tests:
 
@@ -109,28 +131,22 @@ To run the tests:
 go test ./...
 ```
 
-To re-generate the Go code:
+To work with the Docker images, first define the repository URL and tag for your
+images:
 
 ```sh
-make codegen
+export IMAGE_REPO_AGGAPI=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_AGGAPI=<your_agg_apiserver_image_tag>
+export IMAGE_REPO_GRPC=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_GRPC=<your_agg_apiserver_image_tag>
 ```
 
-To build the aggregated API server binary in the `bin` folder:
+Then use these `make` targets to build and push the images:
 
 ```sh
-make build
-```
+make image
 
-To start the mock GRPC server that serves the sample CBT records:
-
-```sh
-go run ./cmd/server
-```
-
-To run the aggregated API server locally:
-
-```sh
-PATH=`pwd`/bin:$PATH make run-local
+make push
 ```
 
 ### Working With The Custom Resource
@@ -229,33 +245,6 @@ curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/defau
     ]
   }
 }
-```
-
-### Testing On Kubernetes
-
-Define the repository URL and tag for your image:
-
-```sh
-export IMAGE_REPO_AGGAPI=<your_agg_apiserver_image_repo>
-export IMAGE_TAG_AGGAPI=<your_agg_apiserver_image_tag>
-export IMAGE_REPO_GRPC=<your_agg_apiserver_image_repo>
-export IMAGE_TAG_GRPC=<your_agg_apiserver_image_tag>
-```
-
-Build and push the aggregated API server and mock GRPC server images:
-
-```sh
-make image
-
-make push
-```
-
-To deploy the YAML manifests to the `csi-cbt` namespaec on a Kubernetes cluster:
-
-```sh
-kubectl create ns csi-cbt
-
-make deploy
 ```
 
 ### Re-generate Code and YAML
