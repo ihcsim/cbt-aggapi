@@ -1,4 +1,4 @@
-package cbt
+package storage
 
 import (
 	"context"
@@ -26,7 +26,7 @@ var _ rest.Connecter = &cbt{}
 
 // NewStorageProvider creates a new instance of a custom storage provider used
 // to handle changed block entries.
-func NewStorageProvider(
+func NewCustomStorage(
 	obj builderresource.Object,
 	clientset cbtclient.Interface,
 ) builderrest.ResourceHandlerProvider {

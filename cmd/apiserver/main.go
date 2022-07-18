@@ -24,7 +24,7 @@ import (
 	// +kubebuilder:scaffold:resource-imports
 	cbtv1alpha1 "github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
 	cbtclient "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
-	cbtstorage "github.com/ihcsim/cbt-aggapi/pkg/storage/cbt"
+	cbtstorage "github.com/ihcsim/cbt-aggapi/pkg/storage"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 		// +kubebuilder:scaffold:resource-register
 		WithResource(&cbtv1alpha1.DriverDiscovery{}).
 		WithResourceAndHandler(&cbtv1alpha1.VolumeSnapshotDelta{},
-			cbtstorage.NewStorageProvider(
+			cbtstorage.NewCustomStorage(
 				&cbtv1alpha1.VolumeSnapshotDelta{},
 				clientset,
 			)).
