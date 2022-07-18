@@ -39,16 +39,7 @@ func main() {
 	if err != nil {
 		klog.Fatal(err)
 	}
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
-	go func() {
-		<-sigChan
-		klog.Info("shutting down server")
-		if err := server.Shutdown(context.Background()); err != nil {
-			klog.Error(err)
-		}
-	}()
+	notifyShutdown(server)
 
 	klog.Info("listening at: ", *listenAddr)
 	if err := server.ListenAndServe(); err != nil {
@@ -111,6 +102,18 @@ func newServer() (*http.Server, error) {
 		Addr:    *listenAddr,
 		Handler: serveMux,
 	}, nil
+}
+
+func notifyShutdown(server *http.Server) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	go func() {
+		<-sigChan
+		klog.Info("shutting down server")
+		if err := server.Shutdown(context.Background()); err != nil {
+			klog.Error(err)
+		}
+	}()
 }
 
 type serveMux struct {
