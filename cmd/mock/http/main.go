@@ -81,26 +81,24 @@ func registerDriver() (runtime.Object, error) {
 		}
 		retry       = time.Second * 5
 		ctx, cancel = context.WithTimeout(context.Background(), time.Minute*5)
-
-		created   runtime.Object
-		createErr error
+		created     runtime.Object
 	)
 
 	klog.Infof("registering CSI driver %s", endpoint.GetName())
 	wait.UntilWithContext(ctx, func(ctx context.Context) {
-		created, createErr = clientset.CbtV1alpha1().DriverDiscoveries().Create(ctx,
+		created, err = clientset.CbtV1alpha1().DriverDiscoveries().Create(ctx,
 			endpoint,
 			metav1.CreateOptions{})
-		if err == nil || apierrors.IsAlreadyExists(createErr) {
+		if err == nil || apierrors.IsAlreadyExists(err) {
 			klog.Infof("successfully registered CSI driver %s", endpoint.GetName())
-			createErr = nil
+			err = nil
 			cancel()
 			return
 		}
 		klog.Info("retry registering CSI driver %s: %s", endpoint.GetName(), err)
 	}, retry)
 
-	return created, createErr
+	return created, err
 }
 
 func newServer() (*http.Server, error) {

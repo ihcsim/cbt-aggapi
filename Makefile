@@ -72,7 +72,6 @@ deploy-aggapi:
 	kubectl -n $(NAMESPACE) wait --timeout=$(WAIT_TIMEOUT) --for=condition=Ready -l apiserver=true po
 
 deploy-mock:
-	sleep 60
 	kubectl apply -f yaml/mock/cbt-grpc.yaml
 	kubectl apply -f yaml/mock/cbt-http.yaml
 
