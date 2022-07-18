@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
-	cbtinformers "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/informers/externalversions/cbt"
+	cbtclient "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,13 +24,15 @@ import (
 
 var _ rest.Connecter = &cbt{}
 
+// NewStorageProvider creates a new instance of a custom storage provider used
+// to handle changed block entries.
 func NewStorageProvider(
 	obj builderresource.Object,
-	informers cbtinformers.Interface,
+	clientset cbtclient.Interface,
 ) builderrest.ResourceHandlerProvider {
 	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (restregistry.Storage, error) {
 		return &cbt{
-			informers:       informers,
+			clientset:       clientset,
 			namespaceScoped: obj.NamespaceScoped(),
 			newFunc:         obj.New,
 			newListFunc:     obj.NewList,
@@ -43,7 +45,7 @@ func NewStorageProvider(
 }
 
 type cbt struct {
-	informers       cbtinformers.Interface
+	clientset       cbtclient.Interface
 	namespaceScoped bool
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
@@ -107,7 +109,7 @@ func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 		}
 
 		// find the CSI driver
-		obj, err := c.informers.V1alpha1().DriverDiscoveries().Lister().Get("example.csi.k8s.io")
+		obj, err := c.clientset.CbtV1alpha1().DriverDiscoveries().Get(ctx, "example.csi.k8s.io", metav1.GetOptions{})
 		if err != nil {
 			http.Error(resp, fmt.Sprintf("failed to discover CSI driver: %s", err), http.StatusInternalServerError)
 			return
