@@ -22,12 +22,13 @@ spec:
         command:
         - "./http-server"
         args:
-        - "--listen=:8080"
+        - "--listen-addr=:8080"
+        - "--grpc-target=:9779"
         env:
         - name: CSI_DRIVER_NAME
           value: example.csi.k8s.io
         - name: CSI_CBT_ENDPOINT
-          value: http://mysvc.foo
+          value: cbt-http:8080
         ports:
         - name: http
           containerPort: 8080
