@@ -21,8 +21,9 @@ init_repo:
 create_group:
 	apiserver-boot create group version resource --group $(API_GROUP) --version $(API_VERSION) --kind $(API_KIND)
 
+.PHONY: apiserver
 apiserver:
-	apiserver-boot build executables --targets apiserver
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o apiserver ./cmd/apiserver/main.go
 
 mock:
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o grpc-server ./cmd/mock/grpc/main.go
@@ -30,8 +31,8 @@ mock:
 
 build: apiserver mock
 
-image: build
-	apiserver-boot build container --targets apiserver --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI)
+image:
+	docker build -t $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) -f Dockerfile .
 	docker build -t $(IMAGE_REPO_GRPC):$(IMAGE_TAG_GRPC) -f Dockerfile-grpc .
 	docker build -t $(IMAGE_REPO_HTTP):$(IMAGE_TAG_HTTP) -f Dockerfile-http .
 

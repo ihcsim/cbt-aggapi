@@ -86,7 +86,7 @@ func registerDriver() (runtime.Object, error) {
 			cancel()
 			return
 		}
-		klog.Info("retry registering CSI driver %s: %s", endpoint.GetName(), err)
+		klog.Infof("retry registering CSI driver %s: %s", endpoint.GetName(), err)
 	}, retry)
 
 	return created, err
