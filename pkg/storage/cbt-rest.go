@@ -17,6 +17,7 @@ import (
 	genericregistry "k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	restregistry "k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/klog"
 	builderresource "sigs.k8s.io/apiserver-runtime/pkg/builder/resource"
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
@@ -24,18 +25,21 @@ import (
 
 var _ rest.Connecter = &cbt{}
 
-// NewStorageProvider creates a new instance of a custom storage provider used
+// NewCustomStorage creates a new instance of a custom storage provider used
 // to handle changed block entries.
 func NewCustomStorage(
 	obj builderresource.Object,
 	clientset cbtclient.Interface,
+	etcdStorage storage.Interface,
 ) builderrest.ResourceHandlerProvider {
+
 	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (restregistry.Storage, error) {
 		return &cbt{
 			clientset:       clientset,
 			namespaceScoped: obj.NamespaceScoped(),
 			newFunc:         obj.New,
 			newListFunc:     obj.NewList,
+			etcd:            etcdStorage,
 			TableConvertor: restregistry.NewDefaultTableConvertor(schema.GroupResource{
 				Group:    obj.GetGroupVersionResource().Group,
 				Resource: obj.GetGroupVersionResource().Resource,
@@ -50,6 +54,7 @@ type cbt struct {
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
 	watch           chan watch.Event
+	etcd            storage.Interface
 	restregistry.TableConvertor
 }
 
@@ -189,12 +194,12 @@ func (c *cbt) List(
 // isn't supported. 'resourceVersion' allows for continuing/starting a watch at a
 // particular version.
 // See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Watcher
-func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
-	if c.watch == nil {
-		c.watch = make(chan watch.Event)
-	}
-	return watch.NewProxyWatcher(c.watch), nil
-}
+// func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+// if c.watch == nil {
+// c.watch = make(chan watch.Event)
+// }
+// return watch.NewProxyWatcher(c.watch), nil
+// }
 
 func writeResponse(resp http.ResponseWriter, data interface{}) {
 	body, err := json.Marshal(data)

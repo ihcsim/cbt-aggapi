@@ -17,11 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	storagebackend "k8s.io/apiserver/pkg/storage/storagebackend"
+	storagebackendfactory "k8s.io/apiserver/pkg/storage/storagebackend/factory"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
 
 	// +kubebuilder:scaffold:resource-imports
+	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
 	cbtv1alpha1 "github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
 	cbtclient "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
 	cbtstorage "github.com/ihcsim/cbt-aggapi/pkg/storage"
@@ -33,6 +38,23 @@ func main() {
 		klog.Fatal(err)
 	}
 
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.VolumeSnapshotDelta{})
+	codec := serializer.NewCodecFactory(scheme).LegacyCodec(v1alpha1.SchemeGroupVersion)
+	storageConfig := storagebackend.NewDefaultConfig(
+		v1alpha1.SchemeGroupVersion.Group, codec)
+	storageConfig.Transport = storagebackend.TransportConfig{
+		ServerList: []string{"http://etcd-svc:2379"},
+	}
+	storageConfigResource := storageConfig.ForResource(v1alpha1.SchemeGroupResource)
+
+	etcdStorage, _, err := storagebackendfactory.Create(
+		*storageConfigResource,
+		(&cbtv1alpha1.VolumeSnapshotDelta{}).New)
+	if err != nil {
+		klog.Fatal(err)
+	}
+
 	apiserver := builder.APIServer.
 		// +kubebuilder:scaffold:resource-register
 		WithResource(&cbtv1alpha1.DriverDiscovery{}).
@@ -40,6 +62,7 @@ func main() {
 			cbtstorage.NewCustomStorage(
 				&cbtv1alpha1.VolumeSnapshotDelta{},
 				clientset,
+				etcdStorage,
 			)).
 		WithLocalDebugExtension()
 

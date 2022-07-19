@@ -88,7 +88,7 @@ func (in *VolumeSnapshotDelta) GetGroupVersionResource() schema.GroupVersionReso
 	return schema.GroupVersionResource{
 		Group:    "cbt.storage.k8s.io",
 		Version:  "v1alpha1",
-		Resource: "volumesnapshotdelta",
+		Resource: "volumesnapshotdeltas",
 	}
 }
 

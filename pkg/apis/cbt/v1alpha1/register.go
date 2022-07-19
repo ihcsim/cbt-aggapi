@@ -28,6 +28,11 @@ var (
 		Version: "v1alpha1",
 	}
 
+	SchemeGroupResource = schema.GroupResource{
+		Group:    "cbt.storage.k8s.io",
+		Resource: "volumesnapshotdeltas",
+	}
+
 	AddToScheme = func(scheme *runtime.Scheme) error {
 		metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 		// +kubebuilder:scaffold:install
