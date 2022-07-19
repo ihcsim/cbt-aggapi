@@ -41,8 +41,7 @@ func main() {
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(v1alpha1.SchemeGroupVersion, &v1alpha1.VolumeSnapshotDelta{})
 	codec := serializer.NewCodecFactory(scheme).LegacyCodec(v1alpha1.SchemeGroupVersion)
-	storageConfig := storagebackend.NewDefaultConfig(
-		v1alpha1.SchemeGroupVersion.Group, codec)
+	storageConfig := storagebackend.NewDefaultConfig("", codec)
 	storageConfig.Transport = storagebackend.TransportConfig{
 		ServerList: []string{"http://etcd-svc:2379"},
 	}

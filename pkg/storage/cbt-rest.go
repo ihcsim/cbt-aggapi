@@ -11,6 +11,8 @@ import (
 	cbtclient "github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -24,6 +26,11 @@ import (
 )
 
 var _ rest.Connecter = &cbt{}
+var _ rest.CreaterUpdater = &cbt{}
+var _ rest.GracefulDeleter = &cbt{}
+var _ rest.Watcher = &cbt{}
+var _ rest.Lister = &cbt{}
+var _ rest.Scoper = &cbt{}
 
 // NewCustomStorage creates a new instance of a custom storage provider used
 // to handle changed block entries.
@@ -32,7 +39,6 @@ func NewCustomStorage(
 	clientset cbtclient.Interface,
 	etcdStorage storage.Interface,
 ) builderrest.ResourceHandlerProvider {
-
 	return func(s *runtime.Scheme, g genericregistry.RESTOptionsGetter) (restregistry.Storage, error) {
 		return &cbt{
 			clientset:       clientset,
@@ -53,7 +59,6 @@ type cbt struct {
 	namespaceScoped bool
 	newFunc         func() runtime.Object
 	newListFunc     func() runtime.Object
-	watch           chan watch.Event
 	etcd            storage.Interface
 	restregistry.TableConvertor
 }
@@ -64,13 +69,11 @@ func (c *cbt) New() runtime.Object {
 
 // NewList returns an empty object that can be used with the List call.
 // This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
 func (c *cbt) NewList() runtime.Object {
 	return c.newListFunc()
 }
 
 // NamespaceScoped returns true if the storage is namespaced
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Scoper
 func (c *cbt) NamespaceScoped() bool {
 	return c.namespaceScoped
 }
@@ -80,31 +83,29 @@ func (c *cbt) NamespaceScoped() bool {
 // code and body, so the ServeHTTP method should exit after invoking the responder. The Handler will
 // be used for a single API request and then discarded. The Responder is guaranteed to write to the
 // same http.ResponseWriter passed to ServeHTTP.
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
 func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r restregistry.Responder) (http.Handler, error) {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		result := &v1alpha1.VolumeSnapshotDelta{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "cbt.storage.k8s.io/v1alpha1",
-				Kind:       "VolumeSnapshotDelta",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-delta",
-				Namespace: "default",
-			},
-			Spec: v1alpha1.VolumeSnapshotDeltaSpec{
-				BaseVolumeSnapshotName:   "base",
-				TargetVolumeSnapshotName: "target",
-				Mode:                     "block",
-			},
-			Status: v1alpha1.VolumeSnapshotDeltaStatus{
-				Error: "",
-			},
-		}
+		var (
+			result  = v1alpha1.VolumeSnapshotDelta{}
+			getOpts = storage.GetOptions{}
+		)
 
+		// retrieve object from etcd
+		if err := c.etcd.Get(ctx, keyPath(id), getOpts, &result); err != nil {
+			status := http.StatusInternalServerError
+			if se, ok := err.(*storage.StorageError); ok && se.Code == storage.ErrCodeKeyNotFound {
+				status = http.StatusNotFound
+				err = se
+			}
+			http.Error(resp, fmt.Sprintf("can't find VolumeSnapshotDelta: %s", err), status)
+			return
+		}
+		klog.Infof("found VolumeSnapshotDelta: %s", id)
+
+		// parse query parameter options
 		opts, ok := options.(*v1alpha1.VolumeSnapshotDeltaOption)
 		if !ok {
-			http.Error(resp, "failed to read VolumeSnapshotDelta options", http.StatusInternalServerError)
+			http.Error(resp, "failed to parse VolumeSnapshotDeltaOptions", http.StatusInternalServerError)
 			return
 		}
 
@@ -147,59 +148,174 @@ func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 // Connect. It may return a bool and a string. If true, the value of the request
 // path below the object will be included as the named string in the serialization
 // of the runtime object.
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
 func (c *cbt) NewConnectOptions() (runtime.Object, bool, string) {
 	return &v1alpha1.VolumeSnapshotDeltaOption{}, false, ""
 }
 
 // ConnectMethods returns the list of HTTP methods handled by Connect
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
 func (c *cbt) ConnectMethods() []string {
 	return []string{"GET"}
 }
 
 // List selects resources in the storage which match to the selector. 'options' can be nil.
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Lister
 func (c *cbt) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
-	return &v1alpha1.VolumeSnapshotDeltaList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "cbt.storage.k8s.io/v1alpha1",
-			Kind:       "VolumeSnapshotDeltaList",
-		},
-		ListMeta: metav1.ListMeta{},
-		Items: []v1alpha1.VolumeSnapshotDelta{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-delta",
-					Namespace: "default",
-				},
-				Spec: v1alpha1.VolumeSnapshotDeltaSpec{
-					BaseVolumeSnapshotName:   "base",
-					TargetVolumeSnapshotName: "target",
-					Mode:                     "block",
-				},
-				Status: v1alpha1.VolumeSnapshotDeltaStatus{
-					Error: "",
+	var (
+		list v1alpha1.VolumeSnapshotDeltaList
+		key  = v1alpha1.SchemeGroupResource.Group
+		opts = storage.ListOptions{
+			ResourceVersion:      options.ResourceVersion,
+			ResourceVersionMatch: options.ResourceVersionMatch,
+			Predicate: storage.SelectionPredicate{
+				Label:               options.LabelSelector,
+				Field:               options.FieldSelector,
+				AllowWatchBookmarks: options.AllowWatchBookmarks,
+				Limit:               options.Limit,
+				Continue:            options.Continue,
+				IndexLabels:         []string{},
+				IndexFields:         []string{},
+				GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
+					return storage.DefaultNamespaceScopedAttr(obj)
 				},
 			},
+		}
+	)
+
+	if err := c.etcd.List(ctx, key, opts, &list); err != nil {
+		return nil, err
+	}
+
+	return &list, nil
+}
+
+// Create creates a new version of a resource.
+func (c *cbt) Create(
+	ctx context.Context,
+	obj runtime.Object,
+	createValidation rest.ValidateObjectFunc,
+	options *metav1.CreateOptions) (runtime.Object, error) {
+
+	casted, ok := obj.(*v1alpha1.VolumeSnapshotDelta)
+	if !ok {
+		return nil, fmt.Errorf("")
+	}
+	casted.SetCreationTimestamp(metav1.Now())
+
+	var out v1alpha1.VolumeSnapshotDelta
+	if err := c.etcd.Create(ctx, keyPath(casted.GetName()), casted, &out, 0); err != nil {
+		return nil, err
+	}
+	klog.Infof("created VolumeSnapshotDelta: %s", out.GetName())
+
+	return &out, nil
+}
+
+// Update finds a resource in the storage and updates it. Some implementations
+// may allow updates creates the object - they should set the created boolean
+// to true.
+func (c *cbt) Update(
+	ctx context.Context,
+	name string,
+	objInfo rest.UpdatedObjectInfo,
+	createValidation rest.ValidateObjectFunc,
+	updateValidation rest.ValidateObjectUpdateFunc,
+	forceAllowCreate bool,
+	options *metav1.UpdateOptions) (runtime.Object, bool, error) {
+
+	var (
+		updated       v1alpha1.VolumeSnapshotDelta
+		preconditions *storage.Preconditions
+	)
+
+	if objInfo.Preconditions() != nil {
+		preconditions = &storage.Preconditions{
+			UID:             objInfo.Preconditions().UID,
+			ResourceVersion: objInfo.Preconditions().ResourceVersion,
+		}
+	}
+
+	klog.Infof("updating VolumeSnapshotDelta: %s", name)
+	if err := c.etcd.GuaranteedUpdate(
+		ctx,
+		keyPath(name),
+		&updated,
+		true,
+		preconditions,
+		func(input runtime.Object, res storage.ResponseMeta) (runtime.Object, *uint64, error) {
+			newObj, err := objInfo.UpdatedObject(ctx, input)
+			return newObj, nil, err
 		},
-	}, nil
+		nil); err != nil {
+		return nil, false, err
+	}
+
+	return &updated, false, nil
+}
+
+// Delete finds a resource in the storage and deletes it.
+// The delete attempt is validated by the deleteValidation first.
+// If options are provided, the resource will attempt to honor them or return an invalid
+// request error.
+// Although it can return an arbitrary error value, IsNotFound(err) is true for the
+// returned error value err when the specified resource is not found.
+// Delete *may* return the object that was deleted, or a status object indicating additional
+// information about deletion.
+// It also returns a boolean which is set to true if the resource was instantly
+// deleted or false if it will be deleted asynchronously.
+func (c *cbt) Delete(
+	ctx context.Context,
+	name string,
+	deleteValidation rest.ValidateObjectFunc,
+	options *metav1.DeleteOptions) (runtime.Object, bool, error) {
+
+	var (
+		out           v1alpha1.VolumeSnapshotDelta
+		preconditions *storage.Preconditions
+	)
+
+	if options.Preconditions != nil {
+		preconditions = &storage.Preconditions{
+			UID:             options.Preconditions.UID,
+			ResourceVersion: options.Preconditions.ResourceVersion,
+		}
+	}
+
+	klog.Infof("deleting VolumeSnapshotDelta: %s", name)
+	if err := c.etcd.Delete(
+		ctx,
+		keyPath(name),
+		&out,
+		preconditions,
+		func(ctx context.Context, obj runtime.Object) error {
+			return deleteValidation(ctx, obj)
+		},
+		nil); err != nil {
+		return nil, false, err
+	}
+
+	return &out, false, nil
 }
 
 // 'label' selects on labels; 'field' selects on the object's fields. Not all fields
 // are supported; an error should be returned if 'field' tries to select on a field that
 // isn't supported. 'resourceVersion' allows for continuing/starting a watch at a
 // particular version.
-// See https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Watcher
-// func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
-// if c.watch == nil {
-// c.watch = make(chan watch.Event)
-// }
-// return watch.NewProxyWatcher(c.watch), nil
-// }
+func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+	opts := storage.ListOptions{
+		ResourceVersion:      options.ResourceVersion,
+		ResourceVersionMatch: options.ResourceVersionMatch,
+		Predicate: storage.SelectionPredicate{
+			Label:               options.LabelSelector,
+			Field:               options.FieldSelector,
+			Limit:               options.Limit,
+			Continue:            options.Continue,
+			AllowWatchBookmarks: options.AllowWatchBookmarks,
+		},
+	}
+	return c.etcd.Watch(ctx, v1alpha1.SchemeGroupResource.Group, opts)
+}
 
 func writeResponse(resp http.ResponseWriter, data interface{}) {
 	body, err := json.Marshal(data)
@@ -214,4 +330,8 @@ func writeResponse(resp http.ResponseWriter, data interface{}) {
 		klog.Error(err)
 		return
 	}
+}
+
+func keyPath(key string) string {
+	return fmt.Sprintf("%s/%s", v1alpha1.SchemeGroupVersion.Group, key)
 }
