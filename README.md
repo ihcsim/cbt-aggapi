@@ -5,8 +5,8 @@ This repository contains an [aggregated API server] prototype used to serve the
 
 The primary goal is to explore ways to implement an in-cluster API endpoint
 which can be used to retrieve a long list of changed block entries (in the order
-of hundreds of MiB), without putting the Kubernetes API server and etcd in the
-data retrieval path.
+of hundreds of MiB), without burdening the Kubernetes API server and etcd during
+the data retrieval.
 
 This prototype explores:
 
@@ -272,7 +272,7 @@ Apache License 2.0, see [LICENSE].
 [aggregated API server ]:https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/apiserver-aggregation/
 [CSI changed block tracking]: https://github.com/kubernetes/enhancements/pull/3367
 [`rest.Connecter`]: https://pkg.go.dev/k8s.io/apiserver/pkg/registry/rest#Connecter
-[`custom` storage]: pkg/storage/custom.go
+[`custom` storage]: pkg/storage/cbt-rest.go
 [custom `Option`]: pkg/apis/cbt/v1alpha1/volumesnapshotdeltaoption_types.go
 [`apiserver-builder`]: https://github.com/kubernetes-sigs/apiserver-builder-alpha
 [LICENSE]: LICENSE
