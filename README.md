@@ -1,12 +1,12 @@
-## CBT Controller
+## CBT Aggregated API Server
 
-This repository contains an [aggregated API server] prototype used to serve the
+This repository contains an [aggregated API server] prototype that can serve the
 [CSI changed block tracking] API.
 
-The primary goal is to explore ways to implement an in-cluster API endpoint
+The primary goal is to explore options to implement an in-cluster API endpoint
 which can be used to retrieve a long list of changed block entries (in the order
 of hundreds of MiB), without burdening the Kubernetes API server and etcd during
-the data retrieval.
+data retrieval.
 
 This prototype explores:
 
@@ -15,10 +15,10 @@ Kubernetes [`rest.Connecter`] interface
 * The implementation of a [custom `Option`] that converts `url.Values` to a
 `runtime.Object`
 
-The `rest.Connecter` implements a modified `GET` handler to return a collection
-of changed block entries, if the `fetchcbd` query parameter is defined.
+The custom REST storage has a `GET` handler which returns a collection of
+changed block entries, if the `fetchcbd` query parameter is specified.
 
-Essentially, the default API endpoint will return a `VolumeSnapshotDelta` custom
+Essentially, the default API endpoint returns a `VolumeSnapshotDelta` custom
 resource:
 
 ```sh
@@ -39,8 +39,8 @@ curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/
 }
 ```
 
-Appending the API endpoint with the `fetchcbd=true` query parameter will return
-the list of changed block entries:
+Appending the API endpoint with the `fetchcbd=true` query parameter will append
+the list of changed block entries to the response:
 
 ```sh
 curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd-true&limit=256&offset=0" | jq .
@@ -125,43 +125,10 @@ cbt-aggapi-77888d6579-cwz8n      1/1     Running   0          102m
 sample-driver-6c8dd6d957-xks74   2/2     Running   0          4m40s
 ```
 
-## Development
-
-Install the `apiserver-builder` tool following the instructions
-[here](https://github.com/kubernetes-sigs/apiserver-builder-alpha#installation).
-The `apiserver-boot` tool requires the code to be checked out into the local
-`$GOPATH` i.e. `github.com/ihcsim/cbt-aggapi`.
-
-To run the tests:
-
-```sh
-go test ./...
-```
-
-To work with the Docker images, first define the repository URL and tag for your
-images:
-
-```sh
-export IMAGE_REPO_AGGAPI=<your_agg_apiserver_image_repo>
-export IMAGE_TAG_AGGAPI=<your_agg_apiserver_image_tag>
-export IMAGE_REPO_GRPC=<your_agg_apiserver_image_repo>
-export IMAGE_TAG_GRPC=<your_agg_apiserver_image_tag>
-```
-
-Then use these `make` targets to build and push the images:
-
-```sh
-make image
-
-make push
-```
-
-### Working With The Custom Resource
-
 Create a `VolumeSnapshotDelta` resource:
 
 ```sh
-cat<<EOF | kubectl apply -f -
+cat<<EOF | kubectl create -f -
 apiVersion: cbt.storage.k8s.io/v1alpha1
 kind: VolumeSnapshotDelta
 metadata:
@@ -253,6 +220,44 @@ curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/defau
   }
 }
 ```
+
+To remove all the prototype components:
+
+```sh
+make clean
+```
+
+## Development
+
+Install the `apiserver-builder` tool following the instructions
+[here](https://github.com/kubernetes-sigs/apiserver-builder-alpha#installation).
+The `apiserver-boot` tool requires the code to be checked out into the local
+`$GOPATH` i.e. `github.com/ihcsim/cbt-aggapi`.
+
+To run the tests:
+
+```sh
+go test ./...
+```
+
+To work with the Docker images, first define the repository URL and tag for your
+images:
+
+```sh
+export IMAGE_REPO_AGGAPI=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_AGGAPI=<your_agg_apiserver_image_tag>
+export IMAGE_REPO_GRPC=<your_agg_apiserver_image_repo>
+export IMAGE_TAG_GRPC=<your_agg_apiserver_image_tag>
+```
+
+Then use these `make` targets to build and push the images:
+
+```sh
+make image
+
+make push
+```
+
 
 ### Re-generate Code and YAML
 
