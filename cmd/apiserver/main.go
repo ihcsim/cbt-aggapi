@@ -63,6 +63,8 @@ func main() {
 				clientset,
 				etcdStorage,
 			)).
+		WithAdditionalSchemeInstallers(v1alpha1.RegisterDefaults).
+		WithAdditionalSchemeInstallers(v1alpha1.RegisterConversions).
 		WithLocalDebugExtension()
 
 	if err := apiserver.Execute(); err != nil {

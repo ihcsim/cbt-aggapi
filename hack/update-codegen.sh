@@ -30,8 +30,10 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-ge
 
 for group in cbt;
 do
-  bash ${CODEGEN_PKG}/generate-groups.sh all \
+  bash ${CODEGEN_PKG}/generate-internal-groups.sh \
+    "deepcopy,client,lister,informer,openapi" \
     github.com/ihcsim/cbt-aggapi/pkg/generated/${group} \
+    github.com/ihcsim/cbt-aggapi/pkg/apis \
     github.com/ihcsim/cbt-aggapi/pkg/apis \
     ${group}:v1alpha1 \
     --output-base "$(dirname ${BASH_SOURCE})/../" \
