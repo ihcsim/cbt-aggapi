@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
@@ -23,8 +25,10 @@ import (
 	"k8s.io/klog"
 )
 
+const defaultPort = 8080
+
 var (
-	listenAddr = flag.String("listen-addr", ":8080", "Address to listen at")
+	listenAddr = flag.String("listen-addr", fmt.Sprintf(":%d", defaultPort), "Address to listen at")
 	grpcTarget = flag.String("grpc-target", ":9779", "Address of the GRPC server")
 )
 
@@ -60,14 +64,25 @@ func registerDriver() (runtime.Object, error) {
 		return nil, err
 	}
 
+	svcPort, err := strconv.ParseInt(os.Getenv("SVC_PORT"), 10, 32)
+	if err != nil {
+		klog.Error(err)
+		svcPort = defaultPort
+	}
+
 	var (
 		endpoint = &v1alpha1.DriverDiscovery{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: os.Getenv("CSI_DRIVER_NAME"),
 			},
 			Spec: v1alpha1.DriverDiscoverySpec{
-				Driver:      os.Getenv("CSI_DRIVER_NAME"),
-				CBTEndpoint: os.Getenv("CSI_CBT_ENDPOINT"),
+				Driver: os.Getenv("CSI_DRIVER_NAME"),
+				Service: v1alpha1.Service{
+					Name:      os.Getenv("SVC_NAME"),
+					Namespace: os.Getenv("SVC_NAMESPACE"),
+					Path:      "/",
+					Port:      svcPort,
+				},
 			},
 		}
 		retry       = time.Second * 5

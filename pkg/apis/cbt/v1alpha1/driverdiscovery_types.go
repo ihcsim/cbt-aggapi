@@ -52,9 +52,16 @@ type DriverDiscoveryList struct {
 
 // DriverDiscoverySpec defines the desired state of DriverDiscovery
 type DriverDiscoverySpec struct {
-	Driver      string `json:"driverName"`
-	CBTEndpoint string `json:"cbtEndpoint"`
-	CABundle    string `json:"caBundle"`
+	Driver   string  `json:"driverName"`
+	CABundle string  `json:"caBundle"`
+	Service  Service `json:"service"`
+}
+
+type Service struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Path      string `json:"path"`
+	Port      int64  `json:"port"`
 }
 
 var _ resource.Object = &DriverDiscovery{}

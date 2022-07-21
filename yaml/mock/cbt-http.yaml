@@ -27,8 +27,14 @@ spec:
         env:
         - name: CSI_DRIVER_NAME
           value: example.csi.k8s.io
-        - name: CSI_CBT_ENDPOINT
-          value: http://cbt-http:8080
+        - name: SVC_NAME
+          value: cbt-http
+        - name: SVC_PORT
+          value: "8080"
+        - name: SVC_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         ports:
         - name: http
           containerPort: 8080
