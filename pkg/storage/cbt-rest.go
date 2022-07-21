@@ -123,7 +123,8 @@ func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 		klog.Infof("discovered CSI driver: %s", obj.GetName())
 
 		// send request to the csi sidecar
-		httpRes, err := http.Get(obj.Spec.CBTEndpoint)
+		endpoint := fmt.Sprintf("http://%s.%s:%d", obj.Spec.Service.Name, obj.Spec.Service.Namespace, obj.Spec.Service.Port)
+		httpRes, err := http.Get(endpoint)
 		if err != nil {
 			http.Error(resp, fmt.Sprintf("failed to fetch CBT entries: %s", err), http.StatusInternalServerError)
 			return

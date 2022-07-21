@@ -3,6 +3,7 @@ module github.com/ihcsim/cbt-aggapi
 go 1.17
 
 require (
+	github.com/kubernetes-csi/csi-lib-utils v0.11.0
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.27.1
 	k8s.io/apimachinery v0.23.0

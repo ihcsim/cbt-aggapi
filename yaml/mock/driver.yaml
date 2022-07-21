@@ -1,29 +1,41 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cbt-http
+  name: sample-driver
   namespace: csi-cbt
   labels:
-    role: http
+    role: csi-driver
 spec:
   selector:
     matchLabels:
-      role: http
+      role: csi-driver
   replicas: 1
   template:
     metadata:
       labels:
-        role: http
+        role: csi-driver
     spec:
       containers:
+      - name: grpc
+        image: quay.io/isim/cbt-grpc:latest
+        command:
+        - "./grpc-server"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 20Mi
+          limits:
+            cpu: 100m
+            memory: 30Mi
+        volumeMounts:
+          - name: socket-dir
+            mountPath: /run/csi
       - name: http
         image: quay.io/isim/cbt-http:latest
         command:
         - "./http-server"
         args:
         - "--listen-addr=:8080"
-        - "--grpc-target=cbt-grpc:9779"
         env:
         - name: CSI_DRIVER_NAME
           value: example.csi.k8s.io
@@ -45,18 +57,24 @@ spec:
           limits:
             cpu: 100m
             memory: 30Mi
+        volumeMounts:
+          - name: socket-dir
+            mountPath: /run/csi
+      volumes:
+      - name: socket-dir
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: cbt-http
+  name: sample-driver
   namespace: csi-cbt
   labels:
-    role: http
+    role: csi-driver
 spec:
   ports:
   - name: http
     port: 8080
     protocol: TCP
   selector:
-    role: http
+    role: csi-driver

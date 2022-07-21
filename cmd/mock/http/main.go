@@ -15,8 +15,9 @@ import (
 	"github.com/ihcsim/cbt-aggapi/pkg/apis/cbt/v1alpha1"
 	"github.com/ihcsim/cbt-aggapi/pkg/generated/cbt/clientset/versioned"
 	cbtgrpc "github.com/ihcsim/cbt-aggapi/pkg/grpc"
+	"github.com/kubernetes-csi/csi-lib-utils/connection"
+	"github.com/kubernetes-csi/csi-lib-utils/metrics"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,17 +30,28 @@ const defaultPort = 8080
 
 var (
 	listenAddr = flag.String("listen-addr", fmt.Sprintf(":%d", defaultPort), "Address to listen at")
-	grpcTarget = flag.String("grpc-target", ":9779", "Address of the GRPC server")
+	csiAddress = flag.String("csi-address", "/run/csi/socket", "Address of the CSI driver socket.")
 )
 
 func main() {
 	flag.Parse()
 
-	if _, err := registerDriver(); err != nil {
+	var (
+		driver    = os.Getenv("CSI_DRIVER_NAME")
+		svc       = os.Getenv("SVC_NAME")
+		namespace = os.Getenv("SVC_NAMESPACE")
+	)
+	svcPort, err := strconv.ParseInt(os.Getenv("SVC_PORT"), 10, 32)
+	if err != nil {
+		klog.Error(err)
+		svcPort = defaultPort
+	}
+
+	if _, err := registerDriver(driver, svc, namespace, svcPort); err != nil {
 		klog.Fatal(err)
 	}
 
-	server, err := newServer()
+	server, err := newServer(driver, *csiAddress)
 	if err != nil {
 		klog.Fatal(err)
 	}
@@ -53,7 +65,7 @@ func main() {
 	}
 }
 
-func registerDriver() (runtime.Object, error) {
+func registerDriver(driver, svc, namespace string, svcPort int64) (runtime.Object, error) {
 	restConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
@@ -64,22 +76,16 @@ func registerDriver() (runtime.Object, error) {
 		return nil, err
 	}
 
-	svcPort, err := strconv.ParseInt(os.Getenv("SVC_PORT"), 10, 32)
-	if err != nil {
-		klog.Error(err)
-		svcPort = defaultPort
-	}
-
 	var (
 		endpoint = &v1alpha1.DriverDiscovery{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: os.Getenv("CSI_DRIVER_NAME"),
+				Name: driver,
 			},
 			Spec: v1alpha1.DriverDiscoverySpec{
-				Driver: os.Getenv("CSI_DRIVER_NAME"),
+				Driver: driver,
 				Service: v1alpha1.Service{
-					Name:      os.Getenv("SVC_NAME"),
-					Namespace: os.Getenv("SVC_NAMESPACE"),
+					Name:      svc,
+					Namespace: namespace,
 					Path:      "/",
 					Port:      svcPort,
 				},
@@ -107,10 +113,10 @@ func registerDriver() (runtime.Object, error) {
 	return created, err
 }
 
-func newServer() (*http.Server, error) {
-	serveMux, err := newServeMux(*grpcTarget)
+func newServer(driver, grpcTarget string) (*http.Server, error) {
+	serveMux, err := newServeMux(driver, grpcTarget)
 	if err != nil {
-		klog.Fatal(err)
+		return nil, err
 	}
 
 	return &http.Server{
@@ -136,10 +142,13 @@ type serveMux struct {
 	*http.ServeMux
 }
 
-func newServeMux(grpcTarget string) (*serveMux, error) {
-	klog.Infof("connecting to GRPC target at %s", grpcTarget)
-	opts := grpc.WithTransportCredentials(insecure.NewCredentials())
-	clientConn, err := grpc.Dial(grpcTarget, opts)
+func newServeMux(driverName, grpcTarget string) (*serveMux, error) {
+	klog.Infof("connecting to CSI driver at %s", grpcTarget)
+	metricsManager := metrics.NewCSIMetricsManager(driverName)
+	csiConn, err := connection.Connect(
+		grpcTarget,
+		metricsManager,
+		connection.OnConnectionLoss(connection.ExitOnConnectionLoss()))
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +157,7 @@ func newServeMux(grpcTarget string) (*serveMux, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handle)
 
-	s.grpc = clientConn
+	s.grpc = csiConn
 	s.ServeMux = mux
 	return s, nil
 }

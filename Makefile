@@ -73,8 +73,7 @@ deploy-aggapi:
 	kubectl -n $(NAMESPACE) wait --timeout=$(WAIT_TIMEOUT) --for=condition=Ready -l apiserver=true po
 
 deploy-mock:
-	kubectl apply -f yaml/mock/cbt-grpc.yaml
-	kubectl apply -f yaml/mock/cbt-http.yaml
+	kubectl apply -f yaml/mock/driver.yaml
 
 clean:
 	kubectl -n $(NAMESPACE) delete -R -f yaml

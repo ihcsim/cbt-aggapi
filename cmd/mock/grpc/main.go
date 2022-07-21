@@ -11,13 +11,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-var listenAddr = flag.String("listen", ":9779", "Address of the GRPC server")
+var csiAddress = flag.String("csi-address", "/run/csi/socket", "Address of the CSI driver socket.")
 
 func main() {
 	flag.Parse()
 
-	log.Printf("listening at %s", *listenAddr)
-	listener, err := net.Listen("tcp", *listenAddr)
+	log.Printf("listening at %s", *csiAddress)
+	listener, err := net.Listen("unix", *csiAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

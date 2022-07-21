@@ -115,14 +115,14 @@ The Docker images are hosted on public repositories at `quay.io/isim`.
 Confirm that all the pods are running:
 
 ```sh
-kubectl -n csi-cbt get po                                                                 ````
+kubectl -n csi-cbt get po
+````
 
 ```sh
-NAME                          READY   STATUS    RESTARTS   AGE
-etcd-0                        1/1     Running   0          112s
-cbt-aggapi-77888d6579-kwtcg   1/1     Running   0          90s
-cbt-http-7769467bdf-vrz8g     1/1     Running   0          28s
-cbt-grpc-5fc84d9656-8sr7q     1/1     Running   0          28s
+NAME                             READY   STATUS    RESTARTS   AGE
+etcd-0                           1/1     Running   0          103m
+cbt-aggapi-77888d6579-cwz8n      1/1     Running   0          102m
+sample-driver-6c8dd6d957-xks74   2/2     Running   0          4m40s
 ```
 
 ## Development
