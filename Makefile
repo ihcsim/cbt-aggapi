@@ -1,9 +1,11 @@
 IMAGE_REPO_AGGAPI ?= quay.io/isim/cbt-aggapi
 IMAGE_REPO_GRPC ?= quay.io/isim/cbt-grpc
 IMAGE_REPO_HTTP ?= quay.io/isim/cbt-http
+IMAGE_REPO_CLIENT ?= quay.io/isim/cbt-client
 IMAGE_TAG_AGGAPI ?= latest
 IMAGE_TAG_GRPC ?= latest
 IMAGE_TAG_HTTP ?= latest
+IMAGE_TAG_CLIENT ?= latest
 
 API_GROUP ?= cbt
 API_VERSION ?= v1alpha1
@@ -28,6 +30,7 @@ apiserver:
 mock:
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o grpc-server ./cmd/mock/grpc/main.go
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o http-server ./cmd/mock/http/main.go
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a -o backup-client ./cmd/mock/client/main.go
 
 build: apiserver mock
 
@@ -35,11 +38,13 @@ image:
 	docker build -t $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) -f Dockerfile .
 	docker build -t $(IMAGE_REPO_GRPC):$(IMAGE_TAG_GRPC) -f Dockerfile-grpc .
 	docker build -t $(IMAGE_REPO_HTTP):$(IMAGE_TAG_HTTP) -f Dockerfile-http .
+	docker build -t $(IMAGE_REPO_CLIENT):$(IMAGE_TAG_CLIENT) -f Dockerfile-client .
 
 push:
 	docker push $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI)
 	docker push $(IMAGE_REPO_GRPC):$(IMAGE_TAG_GRPC)
 	docker push $(IMAGE_REPO_HTTP):$(IMAGE_TAG_HTTP)
+	docker push $(IMAGE_REPO_CLIENT):$(IMAGE_TAG_CLIENT)
 
 run-local:
 	PATH=`pwd`/bin:${PATH} apiserver-boot run local --run apiserver
@@ -73,7 +78,7 @@ deploy-aggapi:
 	kubectl -n $(NAMESPACE) wait --timeout=$(WAIT_TIMEOUT) --for=condition=Ready -l apiserver=true po
 
 deploy-mock:
-	kubectl apply -f yaml/mock/driver.yaml
+	kubectl apply -f yaml/mock/
 
 clean:
 	kubectl -n $(NAMESPACE) delete -R -f yaml

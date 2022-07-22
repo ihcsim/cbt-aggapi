@@ -104,7 +104,7 @@ Create the `csi-cbt` namespace:
 kubectl create ns csi-cbt
 ```
 
-Deploy `etcd`, the aggregated API server and the mock servers:
+Deploy `etcd`, the aggregated API server and the mock components:
 
 ```sh
 make deploy
@@ -122,7 +122,8 @@ kubectl -n csi-cbt get po
 NAME                             READY   STATUS    RESTARTS   AGE
 etcd-0                           1/1     Running   0          103m
 cbt-aggapi-77888d6579-cwz8n      1/1     Running   0          102m
-sample-driver-6c8dd6d957-xks74   2/2     Running   0          4m40s
+sample-driver-6c8dd6d957-xks74   2/2     Running   0          2m40s
+backup-client-6696b88659-dcc4m   1/1     Running   0          108s
 ```
 
 Create a `VolumeSnapshotDelta` resource:
@@ -219,6 +220,29 @@ curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/defau
     ]
   }
 }
+```
+
+The `backup-client` component can also issue requests to the `cbt-aggapi`
+server.
+
+Set up port-forward to the `backup-client` so that it's accessible at your
+`localhost`:
+
+```sh
+kubectl -n csi-cbt port-forward svc/backup-client 8080
+```
+
+Send requests to the `backup-client` to emulate calls to the `cbt-aggapi`
+server:
+
+```sh
+curl localhost:8080/apis/test-delta-02
+```
+
+Fetch all the changed block entries too:
+
+```sh
+curl localhost:8080/apis/test-delta-02/extended
 ```
 
 To remove all the prototype components:

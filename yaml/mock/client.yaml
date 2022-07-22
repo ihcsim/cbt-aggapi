@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backup-client
+  namespace: csi-cbt
+  labels:
+    role: backup-client
+spec:
+  selector:
+    matchLabels:
+      role: backup-client
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        role: backup-client
+    spec:
+      containers:
+      - name: grpc
+        image: quay.io/isim/cbt-client:latest
+        command:
+        - "./backup-client"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 20Mi
+          limits:
+            cpu: 100m
+            memory: 30Mi
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - name: http
+          containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backup-client
+  namespace: csi-cbt
+  labels:
+    role: backup-client
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+  selector:
+    role: backup-client

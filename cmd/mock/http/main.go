@@ -57,7 +57,7 @@ func main() {
 	}
 	notifyShutdown(server)
 
-	klog.Info("listening at: ", *listenAddr)
+	klog.Infof("listening at: %s", *listenAddr)
 	if err := server.ListenAndServe(); err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
 			klog.Error(err)
@@ -153,12 +153,14 @@ func newServeMux(driverName, grpcTarget string) (*serveMux, error) {
 		return nil, err
 	}
 
-	s := &serveMux{}
+	s := &serveMux{
+		grpc: csiConn,
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handle)
-
-	s.grpc = csiConn
 	s.ServeMux = mux
+
 	return s, nil
 }
 

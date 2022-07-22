@@ -175,6 +175,16 @@ func (c *cbt) List(
 	ctx context.Context,
 	options *metainternalversion.ListOptions,
 ) (runtime.Object, error) {
+	labelSelector := options.LabelSelector
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+
+	fieldSelector := options.FieldSelector
+	if fieldSelector == nil {
+		fieldSelector = fields.Everything()
+	}
+
 	var (
 		list v1alpha1.VolumeSnapshotDeltaList
 		key  = v1alpha1.SchemeGroupResource.Group
@@ -182,8 +192,8 @@ func (c *cbt) List(
 			ResourceVersion:      options.ResourceVersion,
 			ResourceVersionMatch: options.ResourceVersionMatch,
 			Predicate: storage.SelectionPredicate{
-				Label:               options.LabelSelector,
-				Field:               options.FieldSelector,
+				Label:               labelSelector,
+				Field:               fieldSelector,
 				AllowWatchBookmarks: options.AllowWatchBookmarks,
 				Limit:               options.Limit,
 				Continue:            options.Continue,
@@ -218,6 +228,12 @@ func (c *cbt) Create(
 
 	var out v1alpha1.VolumeSnapshotDelta
 	if err := c.etcd.Create(ctx, keyPath(casted.GetName()), casted, &out, 0); err != nil {
+		if e, ok := err.(*storage.StorageError); ok {
+			if e.Code == storage.ErrCodeKeyExists {
+				klog.Infof("VolumeSnapshotDelta %s already exists", casted.GetName())
+				return casted, nil
+			}
+		}
 		return nil, err
 	}
 	klog.Infof("created VolumeSnapshotDelta: %s", out.GetName())
@@ -316,12 +332,22 @@ func (c *cbt) Delete(
 // isn't supported. 'resourceVersion' allows for continuing/starting a watch at a
 // particular version.
 func (c *cbt) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {
+	labelSelector := options.LabelSelector
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+
+	fieldSelector := options.FieldSelector
+	if fieldSelector == nil {
+		fieldSelector = fields.Everything()
+	}
+
 	opts := storage.ListOptions{
 		ResourceVersion:      options.ResourceVersion,
 		ResourceVersionMatch: options.ResourceVersionMatch,
 		Predicate: storage.SelectionPredicate{
-			Label:               options.LabelSelector,
-			Field:               options.FieldSelector,
+			Label:               labelSelector,
+			Field:               fieldSelector,
 			Limit:               options.Limit,
 			Continue:            options.Continue,
 			AllowWatchBookmarks: options.AllowWatchBookmarks,
