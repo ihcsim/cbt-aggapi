@@ -10,8 +10,7 @@ spec:
   group: cbt.storage.k8s.io
   groupPriorityMinimum: 2000
   service:
-    name: cbt
+    name: cbt-aggapi
     namespace: csi-cbt
   versionPriority: 10
   caBundle: ""
----

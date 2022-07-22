@@ -22,7 +22,7 @@ Essentially, the default API endpoint returns a `VolumeSnapshotDelta` custom
 resource:
 
 ```sh
-curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta" | jq .
+curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdeltas/test-delta" | jq .
 {
   "kind": "VolumeSnapshotDelta",
   "apiVersion": "cbt.storage.k8s.io/v1alpha1",
@@ -43,7 +43,7 @@ Appending the API endpoint with the `fetchcbd=true` query parameter will append
 the list of changed block entries to the response:
 
 ```sh
-curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd-true&limit=256&offset=0" | jq .
+curl "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdeltas/test-delta?fetchcbd-true&limit=256&offset=0" | jq .
 {
   "kind": "VolumeSnapshotDelta",
   "apiVersion": "cbt.storage.k8s.io/v1alpha1",
@@ -170,7 +170,7 @@ kubectl proxy &
 Get the changed block entries of the resource:
 
 ```sh
-curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdelta/test-delta?fetchcbd=true&limit=256&offset=0"
+curl -k "http://127.0.0.1:8001/apis/cbt.storage.k8s.io/v1alpha1/namespaces/default/volumesnapshotdeltas/test-delta?fetchcbd=true&limit=256&offset=0"
 ```
 
 ```json

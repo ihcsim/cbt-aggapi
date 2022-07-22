@@ -67,7 +67,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sample-driver
+  name: cbt-http
   namespace: csi-cbt
   labels:
     role: csi-driver

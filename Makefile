@@ -60,7 +60,7 @@ proto:
 .PHONY: yaml
 yaml:
 	rm -rf yaml-generated
-	apiserver-boot build config --name cbt --namespace csi-cbt --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) --output yaml-generated
+	apiserver-boot build config --name cbt-aggapi --namespace csi-cbt --image $(IMAGE_REPO_AGGAPI):$(IMAGE_TAG_AGGAPI) --output yaml-generated
 
 deploy: deploy-etcd deploy-aggapi deploy-mock
 
