@@ -114,34 +114,46 @@ func (c *cbt) Connect(ctx context.Context, id string, options runtime.Object, r 
 			return
 		}
 
-		// find the CSI driver
-		obj, err := c.clientset.CbtV1alpha1().DriverDiscoveries().Get(ctx, "example.csi.k8s.io", metav1.GetOptions{})
+		r, err := c.invokeCBTService(ctx)
 		if err != nil {
-			http.Error(resp, fmt.Sprintf("failed to discover CSI driver: %s", err), http.StatusInternalServerError)
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		klog.Infof("discovered CSI driver: %s", obj.GetName())
+		defer r.Close()
 
-		// send request to the csi sidecar
-		endpoint := fmt.Sprintf("http://%s.%s:%d", obj.Spec.Service.Name, obj.Spec.Service.Namespace, obj.Spec.Service.Port)
-		httpRes, err := http.Get(endpoint)
+		raw, err := io.ReadAll(r)
 		if err != nil {
-			http.Error(resp, fmt.Sprintf("failed to fetch CBT entries: %s", err), http.StatusInternalServerError)
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		body, err := io.ReadAll(httpRes.Body)
-		if err != nil {
-			http.Error(resp, fmt.Sprintf("failed to read CBT entries: %s", err), http.StatusInternalServerError)
+		var entries []*v1alpha1.ChangedBlockDelta
+		if err := json.Unmarshal(raw, &entries); err != nil {
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		result.Status = v1alpha1.VolumeSnapshotDeltaStatus{
+			ChangedBlockDeltas: entries,
 		}
 
-		resp.WriteHeader(http.StatusOK)
-		if _, err := resp.Write(body); err != nil {
-			klog.Error(err)
-			return
-		}
+		writeResponse(resp, result)
 	}), nil
+}
+
+func (c *cbt) invokeCBTService(ctx context.Context) (io.ReadCloser, error) {
+	obj, err := c.clientset.CbtV1alpha1().DriverDiscoveries().Get(ctx, "example.csi.k8s.io", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	klog.Infof("discovered CSI driver: %s", obj.GetName())
+
+	endpoint := fmt.Sprintf("http://%s.%s:%d", obj.Spec.Service.Name, obj.Spec.Service.Namespace, obj.Spec.Service.Port)
+	res, err := http.Get(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Body, nil
 }
 
 // NewConnectOptions returns an empty options object that will be used to pass
